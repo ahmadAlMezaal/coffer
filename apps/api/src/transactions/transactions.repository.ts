@@ -5,7 +5,19 @@ import { Prisma } from '@coffer/database';
 import { DatabaseService } from '../database/database.service';
 
 const transactionDetail = {
-  account: { select: { name: true } },
+  account: {
+    select: {
+      name: true,
+      accessConsent: {
+        select: {
+          institutionId: true,
+          institutionName: true,
+          institutionLogo: true,
+          institutionColour: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.TransactionInclude;
 
 export type TransactionRecord = Prisma.TransactionGetPayload<{

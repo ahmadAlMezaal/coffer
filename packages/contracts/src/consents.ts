@@ -2,12 +2,20 @@ export type ConsentStatus = 'processing' | 'active' | 'reauth_required' | 'revok
 
 export type SyncRunStatus = 'running' | 'succeeded' | 'failed';
 
+export type Institution = {
+  id: string | null;
+  name: string | null;
+  logo: string | null;
+  colour: string | null;
+};
+
 export type ConsentSummary = {
   id: string;
   provider: string;
-  institutionName: string | null;
+  institution: Institution;
   status: ConsentStatus;
   consentedAt: string;
+  expiresAt: string | null;
   lastSyncedAt: string | null;
   accountCount: number;
   lastSyncStatus: SyncRunStatus | null;
@@ -26,4 +34,9 @@ export type CreateConsentResponse = {
   consentId: string;
   status: ConsentStatus;
   accountsLinked: number;
+};
+
+export type RevokeConsentResponse = {
+  consentId: string;
+  status: ConsentStatus;
 };

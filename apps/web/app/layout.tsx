@@ -1,7 +1,17 @@
+import { Inter, Manrope } from 'next/font/google';
+import { cookies } from 'next/headers';
+
+import { Sidebar } from '@/components/sidebar';
+import { DRAWER_COOKIE, isDrawerExpanded } from '@/lib/drawer';
+import { readUser } from '@/lib/services/dashboard.service';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import './globals.css';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Coffer',
@@ -13,10 +23,20 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const RootLayout = ({ children }: { children: ReactNode }) => (
-  <html lang="en-GB">
-    <body className="min-h-screen bg-white text-neutral-900 antialiased">{children}</body>
-  </html>
-);
+const RootLayout = async ({ children }: { children: ReactNode }) => {
+  const [user, store] = await Promise.all([readUser(), cookies()]);
+  const expanded = isDrawerExpanded(store.get(DRAWER_COOKIE)?.value);
+
+  return (
+    <html lang="en-GB" className={`${inter.variable} ${manrope.variable}`}>
+      <body className="bg-ground text-ink min-h-screen font-sans antialiased">
+        <div className="flex min-h-screen">
+          <Sidebar user={user} initiallyExpanded={expanded} />
+          <div className="min-w-0 flex-1">{children}</div>
+        </div>
+      </body>
+    </html>
+  );
+};
 
 export default RootLayout;

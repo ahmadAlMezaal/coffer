@@ -1,3 +1,5 @@
+import { BankMark } from '@/components/bank-mark';
+import { CategoryChip } from '@/components/category-chip';
 import { preciseMoney, shortDate } from '@/lib/format';
 import type { TransactionSummary } from '@coffer/contracts';
 
@@ -6,12 +8,14 @@ type TransactionsTableProps = {
   loading: boolean;
 };
 
+const COLUMNS = 6;
+
 const SkeletonRows = () => (
   <>
     {[0, 1, 2, 3, 4, 5].map((row) => (
-      <tr key={row} className="border-t border-neutral-100">
-        <td colSpan={5} className="px-4 py-3">
-          <span className="block h-3 w-full animate-pulse rounded bg-neutral-100" />
+      <tr key={row} className="border-hairline border-t">
+        <td colSpan={COLUMNS} className="px-5 py-3.5">
+          <span className="bg-surface-muted block h-3 w-full animate-pulse rounded" />
         </td>
       </tr>
     ))}
@@ -19,54 +23,66 @@ const SkeletonRows = () => (
 );
 
 export const TransactionsTable = ({ transactions, loading }: TransactionsTableProps) => (
-  <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-    <table className="w-full min-w-[720px] text-left text-sm">
+  <div className="card overflow-x-auto">
+    <table className="w-full min-w-[860px] text-left text-sm">
       <thead>
-        <tr className="text-xs uppercase tracking-wide text-neutral-500">
-          <th className="px-4 py-3 font-medium">Date</th>
-          <th className="px-4 py-3 font-medium">To or from</th>
-          <th className="px-4 py-3 font-medium">Account</th>
-          <th className="px-4 py-3 font-medium">Category</th>
-          <th className="px-4 py-3 text-right font-medium">Amount</th>
+        <tr className="border-hairline border-b">
+          <th className="eyebrow px-5 py-3.5 font-semibold">Date</th>
+          <th className="eyebrow px-5 py-3.5 font-semibold">To or from</th>
+          <th className="eyebrow px-5 py-3.5 font-semibold">Bank</th>
+          <th className="eyebrow px-5 py-3.5 font-semibold">Category</th>
+          <th className="eyebrow px-5 py-3.5 text-right font-semibold">Amount</th>
+          <th className="eyebrow px-5 py-3.5 font-semibold">Account</th>
         </tr>
       </thead>
       <tbody>
         {loading && transactions.length === 0 ? <SkeletonRows /> : null}
 
         {!loading && transactions.length === 0 ? (
-          <tr className="border-t border-neutral-100">
-            <td colSpan={5} className="px-4 py-8 text-center text-neutral-500">
-              No transactions match these filters.
+          <tr>
+            <td colSpan={COLUMNS} className="text-ink-muted px-5 py-12 text-center">
+              No transactions match these filters. Widen the dates, or clear the search.
             </td>
           </tr>
         ) : null}
 
         {transactions.map((transaction) => (
-          <tr key={transaction.id} className="border-t border-neutral-100">
-            <td className="whitespace-nowrap px-4 py-3 tabular-nums text-neutral-500">
+          <tr
+            key={transaction.id}
+            className="border-hairline hover:bg-surface-muted/50 border-t transition-colors"
+          >
+            <td className="text-ink-muted px-5 py-3.5 whitespace-nowrap tabular-nums">
               {shortDate(transaction.bookedAt)}
             </td>
-            <td className="px-4 py-3 text-neutral-900">
+
+            <td className="text-ink px-5 py-3.5 font-medium">
               {transaction.merchantName ?? transaction.description}
               {transaction.isInternalTransfer ? (
-                <span className="ml-2 rounded border border-neutral-200 px-1.5 py-0.5 text-xs text-neutral-500">
+                <span className="border-hairline text-ink-faint ml-2 rounded-full border px-2 py-0.5 text-[0.6875rem] font-normal">
                   internal transfer
                 </span>
               ) : null}
             </td>
-            <td className="whitespace-nowrap px-4 py-3 text-neutral-500">
-              {transaction.accountName}
+
+            <td className="px-5 py-3.5">
+              <BankMark institution={transaction.institution} size="sm" />
             </td>
-            <td className="whitespace-nowrap px-4 py-3 text-neutral-500">
-              {transaction.category ?? '—'}
+
+            <td className="px-5 py-3.5">
+              <CategoryChip category={transaction.category} />
             </td>
+
             <td
-              className={`whitespace-nowrap px-4 py-3 text-right tabular-nums ${
-                transaction.direction === 'in' ? 'text-emerald-600' : 'text-neutral-900'
+              className={`px-5 py-3.5 text-right font-semibold whitespace-nowrap tabular-nums ${
+                transaction.direction === 'in' ? 'text-inflow' : 'text-outflow'
               }`}
             >
               {transaction.direction === 'in' ? '+' : '−'}
               {preciseMoney(transaction.amount, transaction.currency)}
+            </td>
+
+            <td className="text-ink-muted px-5 py-3.5 whitespace-nowrap">
+              {transaction.accountName}
             </td>
           </tr>
         ))}

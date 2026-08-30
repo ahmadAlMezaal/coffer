@@ -66,6 +66,13 @@ export type LinkedItem = {
   accessToken: string;
   providerItemId: string;
   institutionId: string | null;
+  consentExpiresAt: string | null;
+};
+
+export type Institution = {
+  name: string;
+  logo: string | null;
+  colour: string | null;
 };
 
 export type LinkToken = {

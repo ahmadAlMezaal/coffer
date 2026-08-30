@@ -6,6 +6,7 @@ import type {
   StatsResponse,
   TransactionQuery,
   TransactionsResponse,
+  UserResponse,
 } from '@coffer/contracts';
 
 export type DashboardState = 'empty' | 'syncing' | 'ready' | 'stale' | 'unreachable' | 'rejected';
@@ -18,6 +19,13 @@ export type Dashboard = {
   stats: StatsResponse;
   lastSyncedAt: string | null;
   syncError: string | null;
+  apiError: string | null;
+};
+
+export type LinkedBanks = {
+  state: DashboardState;
+  consents: ConsentSummary[];
+  accounts: AccountsResponse;
   apiError: string | null;
 };
 
@@ -43,6 +51,7 @@ const emptyStats: StatsResponse = {
   periodEnd: '',
   computedAt: null,
   projection: [],
+  monthlySeries: [],
 };
 
 const mostRecent = (consents: ConsentSummary[]): string | null => {
@@ -139,6 +148,40 @@ export const readDashboard = async (query: TransactionQuery): Promise<Dashboard>
       apiError: failure.apiError,
     };
   }
+};
+
+export const readLinkedBanks = async (): Promise<LinkedBanks> => {
+  try {
+    const [consents, accounts] = await Promise.all([api.getConsents(), api.getAccounts()]);
+
+    return {
+      state: consents.consents.length === 0 ? 'empty' : 'ready',
+      consents: consents.consents,
+      accounts,
+      apiError: null,
+    };
+  } catch (error) {
+    const failure = classifyFailure(error);
+
+    return {
+      state: failure.state,
+      consents: [],
+      accounts: emptyAccounts,
+      apiError: failure.apiError,
+    };
+  }
+};
+
+export const readUser = async (): Promise<UserResponse | null> => {
+  try {
+    return await api.getUser();
+  } catch {
+    return null;
+  }
+};
+
+export const disconnectBank = async (consentId: string): Promise<void> => {
+  await api.deleteConsent(consentId);
 };
 
 export const startLink = async (): Promise<string> => {

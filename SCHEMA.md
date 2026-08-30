@@ -29,6 +29,9 @@ erDiagram
         text access_token
         text institution_id
         text institution_name
+        text institution_logo
+        text institution_colour
+        timestamptz institution_refreshed_at
         text status
         text sync_cursor
         timestamptz consented_at
@@ -134,8 +137,16 @@ Persist it only after a full pagination loop completes, never mid-pages. If you
 save a partial cursor and then crash, you silently skip transactions.
 
 **`access_consents.status`** wants at least `active`, `reauth_required`,
-`revoked`. Not implemented for real, but the column existing is the cheap way to
-show you know consent expires.
+`revoked`. Disconnecting a bank calls Plaid's `/item/remove`, terminates the
+sync workflow and sets `revoked`. Every read filters revoked consents out rather
+than deleting rows, so the raw payloads stay auditable.
+
+**`access_consents.institution_logo`** and `institution_colour` are the
+optional branding Plaid returns from `/institutions/get_by_id`, cached so the
+dashboard never reaches a provider to draw a row.
+`institution_refreshed_at` records that the lookup happened, including when it
+came back empty, which is what stops a bank without a logo being fetched on
+every page load.
 
 **`transactions.direction`** is a normalised `in` or `out`. Plaid returns
 positive amounts for money leaving the account, which is the opposite of what

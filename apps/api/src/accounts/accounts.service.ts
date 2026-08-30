@@ -37,8 +37,14 @@ export class AccountsService {
 
     const groups: AccountGroup[] = consents.map((consent) => ({
       consentId: consent.id,
-      institutionName: consent.institutionName,
+      institution: {
+        id: consent.institutionId,
+        name: consent.institutionName,
+        logo: consent.institutionLogo,
+        colour: consent.institutionColour,
+      },
       status: consent.status,
+      expiresAt: consent.expiresAt === null ? null : consent.expiresAt.toISOString(),
       lastSyncedAt: consent.lastSyncedAt === null ? null : consent.lastSyncedAt.toISOString(),
       accounts: accounts.filter((account) => account.accessConsentId === consent.id).map(toSummary),
     }));

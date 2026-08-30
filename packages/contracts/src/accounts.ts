@@ -1,4 +1,4 @@
-import type { ConsentStatus } from './consents';
+import type { ConsentStatus, Institution } from './consents';
 
 export type AccountSummary = {
   id: string;
@@ -15,8 +15,9 @@ export type AccountSummary = {
 
 export type AccountGroup = {
   consentId: string;
-  institutionName: string | null;
+  institution: Institution;
   status: ConsentStatus;
+  expiresAt: string | null;
   lastSyncedAt: string | null;
   accounts: AccountSummary[];
 };

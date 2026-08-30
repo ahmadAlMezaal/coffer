@@ -4,9 +4,16 @@ import {
   createLinkToken,
   exchangePublicToken,
   fetchAccounts,
-  fetchInstitutionName,
+  fetchInstitution,
+  removeItem,
 } from '@coffer/provider';
-import type { Captured, LinkToken, LinkedItem, NormalisedAccount } from '@coffer/provider';
+import type {
+  Captured,
+  Institution,
+  LinkToken,
+  LinkedItem,
+  NormalisedAccount,
+} from '@coffer/provider';
 
 @Injectable()
 export class ProviderService {
@@ -22,7 +29,11 @@ export class ProviderService {
     return fetchAccounts(accessToken);
   }
 
-  fetchInstitutionName(institutionId: string): Promise<string | null> {
-    return fetchInstitutionName(institutionId);
+  fetchInstitution(institutionId: string): Promise<Institution> {
+    return fetchInstitution(institutionId);
+  }
+
+  removeItem(accessToken: string): Promise<void> {
+    return removeItem(accessToken);
   }
 }

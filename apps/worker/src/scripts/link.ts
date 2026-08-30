@@ -1,5 +1,5 @@
 import { prisma } from '@coffer/database';
-import { exchangePublicToken, fetchAccounts, fetchInstitutionName } from '@coffer/provider';
+import { exchangePublicToken, fetchAccounts, fetchInstitution } from '@coffer/provider';
 
 import { SEEDED_USER_EMAIL, SEEDED_USER_ID } from '../config/app';
 import * as accounts from '../repositories/accounts.repository';
@@ -13,9 +13,20 @@ export const linkPublicToken = async (publicToken: string): Promise<string> => {
   });
 
   const exchanged = await exchangePublicToken(publicToken);
-  const institutionName = exchanged.data.institutionId
-    ? await fetchInstitutionName(exchanged.data.institutionId)
+
+  const institution = exchanged.data.institutionId
+    ? await fetchInstitution(exchanged.data.institutionId)
     : null;
+
+  const branding = {
+    institutionId: exchanged.data.institutionId,
+    institutionName: institution?.name ?? null,
+    institutionLogo: institution?.logo ?? null,
+    institutionColour: institution?.colour ?? null,
+    institutionRefreshedAt: new Date(),
+    expiresAt:
+      exchanged.data.consentExpiresAt === null ? null : new Date(exchanged.data.consentExpiresAt),
+  };
 
   const consent = await prisma.accessConsent.upsert({
     where: { providerItemId: exchanged.data.providerItemId },
@@ -23,14 +34,13 @@ export const linkPublicToken = async (publicToken: string): Promise<string> => {
       userId: SEEDED_USER_ID,
       providerItemId: exchanged.data.providerItemId,
       accessToken: exchanged.data.accessToken,
-      institutionId: exchanged.data.institutionId,
-      institutionName,
       status: 'processing',
+      ...branding,
     },
     update: {
       accessToken: exchanged.data.accessToken,
-      institutionName,
       status: 'processing',
+      ...branding,
     },
   });
 

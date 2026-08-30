@@ -142,12 +142,14 @@ firm.
 ## The API
 
 ```
-POST /link-tokens              create a Plaid link token
-POST /consents                 exchange public_token, store, start workflow, 200
-GET  /consents                 connection list with status and lastSyncedAt
-GET  /accounts                 accounts with balances, grouped by consent
-GET  /transactions             ?accountId&from&to&counterparty&cursor&limit
-GET  /stats                    balances, monthly in and out, runway, cash zero, deltas
+POST   /link-tokens            create a Plaid link token
+POST   /consents               exchange public_token, store, start workflow, 200
+GET    /consents               connection list with status, expiry and lastSyncedAt
+DELETE /consents/:id           remove the Plaid item, stop the workflow, revoke
+GET    /accounts               accounts with balances, grouped by consent
+GET    /transactions           ?accountId&from&to&counterparty&cursor&limit
+GET    /stats                  balances, monthly in and out, runway, cash zero, deltas
+GET    /me                     the signed in owner, for the profile card
 ```
 
 Transactions is one filtered endpoint rather than nested under an account,
@@ -155,7 +157,15 @@ because the table has Date, Account and To/From filters above a single combined
 list. Reads filter `removedAt: null`. No authentication, per the brief.
 
 `GET /stats` is a read of `stats_snapshots`, never a computation. The workflow
-computes and writes them.
+computes and writes them. The six month series behind the spend and income
+charts is the one exception: it is a grouped read over `transactions`, because a
+snapshot only ever describes the month it was computed in, and the deltas beside
+those figures come from the same series.
+
+`DELETE /consents/:id` terminates the sync workflow before it calls Plaid, so a
+run in flight cannot write against an item that is about to disappear. Plaid
+refusing the removal does not block the revocation, it is logged and the consent
+is revoked anyway.
 
 ## Stats
 
@@ -182,6 +192,22 @@ render as a dash rather than infinity.
 The runway curve is a forward projection from the current balance at the current
 burn rate. It is not a plot of historical balances and there is no balance
 history table. That is a modelling choice, not a shortcut.
+
+## The dashboard
+
+Two pages behind a drawer that collapses to icons, its state kept in a cookie so
+the server renders the right width and nothing jumps on load.
+
+**Home** opens on a card per account, each carrying the bank's own logo pulled
+from Plaid, then three charts: projected balance falling to cash zero, and six
+months of spend and income as bars against the month just gone. Under them sits
+the transaction table, filtered by account, by a single date range and by
+counterparty. Choosing an account or a range applies straight away, there is no
+Filter button to press.
+
+**Accounts** is where a connection is managed rather than read: what each bank
+holds, when the consent was given, when its access expires, and the control to
+disconnect it.
 
 ## Three dashboard states
 

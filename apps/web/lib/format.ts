@@ -44,3 +44,32 @@ export const signedPercentage = (value: number | null): string | null => {
 
   return `${rounded >= 0 ? '+' : ''}${rounded}%`;
 };
+
+export const monthLabel = (iso: string): string =>
+  new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(new Date(iso));
+
+export const monthYearLabel = (iso: string): string =>
+  new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(iso),
+  );
+
+export const compactDate = (iso: string): string =>
+  new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+    new Date(iso),
+  );
+
+export const dateRangeLabel = (from: string | undefined, to: string | undefined): string => {
+  if (!from && !to) {
+    return 'Any date';
+  }
+
+  if (from && !to) {
+    return `From ${shortDate(from)}`;
+  }
+
+  if (!from && to) {
+    return `Until ${shortDate(to)}`;
+  }
+
+  return `${compactDate(from ?? '')} to ${shortDate(to ?? '')}`;
+};

@@ -1,4 +1,7 @@
-import { money, preciseMoney, relativeTime } from '@/lib/format';
+import { BankMark } from '@/components/bank-mark';
+import { ConnectBank } from '@/components/connect-bank';
+import { RefreshIcon } from '@/components/icons';
+import { preciseMoney, relativeTime } from '@/lib/format';
 import type { AccountGroup } from '@coffer/contracts';
 
 type BalanceCardsProps = {
@@ -9,17 +12,22 @@ type BalanceCardsProps = {
 };
 
 const Skeleton = () => (
-  <div className="h-[104px] animate-pulse rounded-xl border border-neutral-200 bg-neutral-100" />
+  <div className="border-hairline bg-surface-muted h-[132px] animate-pulse rounded-[0.875rem] border" />
 );
 
 export const BalanceCards = ({ groups, totalBalance, currency, loading }: BalanceCardsProps) => {
   const accounts = groups.flatMap((group) =>
-    group.accounts.map((account) => ({ ...account, institutionName: group.institutionName })),
+    group.accounts.map((account) => ({
+      ...account,
+      institution: group.institution,
+      lastSyncedAt: group.lastSyncedAt,
+    })),
   );
 
   if (loading && accounts.length === 0) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Skeleton />
         <Skeleton />
         <Skeleton />
         <Skeleton />
@@ -28,34 +36,51 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-xl border border-neutral-900 bg-neutral-900 p-4 text-white">
-        <p className="text-xs uppercase tracking-wide text-neutral-400">Total balance</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="bg-plum flex flex-col rounded-[0.875rem] p-5 text-white">
+        <p className="text-[0.6875rem] font-semibold tracking-[0.08em] text-white/60 uppercase">
+          Total balance
+        </p>
+        <p className="figure mt-3 text-2xl font-extrabold">
           {preciseMoney(totalBalance, currency)}
         </p>
-        <p className="mt-1 text-xs text-neutral-400">
-          {accounts.length} account{accounts.length === 1 ? '' : 's'}
+        <p className="mt-auto pt-3 text-xs text-white/60">
+          Across {accounts.length} account{accounts.length === 1 ? '' : 's'} at {groups.length} bank
+          {groups.length === 1 ? '' : 's'}
         </p>
-      </div>
+      </section>
 
       {accounts.map((account) => (
-        <div key={account.id} className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="truncate text-xs uppercase tracking-wide text-neutral-500">
-            {account.institutionName ?? 'Linked bank'}
+        <section key={account.id} className="card flex flex-col p-5">
+          <div className="flex items-center gap-2.5">
+            <BankMark institution={account.institution} size="sm" />
+            <p className="text-ink truncate text-sm font-semibold">
+              {account.institution.name ?? 'Linked bank'}
+            </p>
+          </div>
+
+          <p className="figure text-ink mt-3 text-2xl font-extrabold">
+            {preciseMoney(account.currentBalance, account.currency)}
           </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-neutral-900">
-            {money(account.currentBalance, account.currency)}
-          </p>
-          <p className="mt-1 truncate text-xs text-neutral-500">
+
+          <p className="text-ink-muted mt-1 truncate text-xs">
             {account.name}
-            {account.mask ? ` ••${account.mask}` : ''}
+            {account.mask === null ? '' : ` (••${account.mask})`}
           </p>
-          <p className="mt-0.5 text-xs text-neutral-400">
-            Balance as of {relativeTime(account.balanceAsOf)}
+
+          <p className="text-ink-faint mt-auto flex items-center gap-1.5 pt-3 text-xs">
+            <RefreshIcon className="h-3.5 w-3.5" />
+            {account.lastSyncedAt === null
+              ? 'Not synced yet'
+              : `Synced ${relativeTime(account.lastSyncedAt)}`}
           </p>
-        </div>
+        </section>
       ))}
+
+      <ConnectBank
+        label={accounts.length === 0 ? 'Connect a bank' : 'Link bank account'}
+        variant="card"
+      />
     </div>
   );
 };
