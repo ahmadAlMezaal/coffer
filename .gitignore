@@ -1,1 +1,17 @@
+node_modules/
+.pnpm-store/
+
+.next/
+dist/
+src/generated/
+.turbo/
+
 .env
+.env.*
+!.env.example
+
+.DS_Store
+*.log
+
+.claude/settings.local.json
+docs/ai/*.jsonl
