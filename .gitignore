@@ -3,7 +3,7 @@ node_modules/
 
 .next/
 dist/
-src/generated/
+**/src/generated/
 .turbo/
 
 .env
@@ -12,6 +12,10 @@ src/generated/
 
 .DS_Store
 *.log
+*.tsbuildinfo
+next-env.d.ts
 
 .claude/settings.local.json
 docs/ai/*.jsonl
+
+.temporal/

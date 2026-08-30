@@ -1,0 +1,35 @@
+{
+  "name": "coffer",
+  "private": true,
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "postinstall": "pnpm --filter @coffer/database run build",
+    "db:build": "pnpm --filter @coffer/database run build",
+    "dev": "pnpm --parallel --filter @coffer/web --filter @coffer/api --filter @coffer/worker run dev",
+    "build": "pnpm --filter @coffer/database run build && pnpm --filter @coffer/web run build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm --recursive run typecheck",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "24.10.4",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-import-resolver-node": "0.3.9",
+    "eslint-plugin-import-x": "4.17.1",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.11.0",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.68.0",
+    "vitest": "4.1.11"
+  }
+}

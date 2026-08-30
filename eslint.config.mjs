@@ -19,7 +19,7 @@ const NO_MIXED_TYPE_IMPORT = {
 const IMPORT_ORDER = {
   groups: ['builtin', 'external', 'internal', 'parent', ['sibling', 'index'], 'type'],
   pathGroups: [
-    { pattern: '@cursus/**', group: 'internal', position: 'before' },
+    { pattern: '@coffer/**', group: 'internal', position: 'before' },
     { pattern: '@/**', group: 'internal' },
     { pattern: '@test/**', group: 'internal' },
   ],
@@ -28,11 +28,6 @@ const IMPORT_ORDER = {
   'newlines-between-types': 'never',
   sortTypesGroup: true,
   alphabetize: { order: 'asc', caseInsensitive: true },
-};
-
-const NO_UNCACHED_ACCOUNT_READ = {
-  selector: "MemberExpression[object.name='accountService'][property.name='current']",
-  message: 'Read the account through currentAccount, so the layout and the page share one request.',
 };
 
 export default tseslint.config(
@@ -58,7 +53,7 @@ export default tseslint.config(
       globals: { ...globals.browser, ...globals.node },
     },
     plugins: { react, 'react-hooks': reactHooks, 'import-x': importX },
-    settings: { react: { version: 'detect' } },
+    settings: { react: { version: '19.2' } },
     rules: {
       ...react.configs.flat.recommended.rules,
       ...react.configs.flat['jsx-runtime'].rules,
@@ -89,6 +84,20 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.{ts,tsx}'],
+    ignores: ['packages/provider/**'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'fetch',
+          message:
+            'Outbound calls belong in packages/provider, the only package allowed to reach the open banking layer.',
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/web/components/**/*.{ts,tsx}', 'apps/web/app/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
@@ -114,7 +123,7 @@ export default tseslint.config(
           message: 'Reaching the network is a repository job. Call a service instead.',
         },
       ],
-      'no-restricted-syntax': ['error', NO_THEN, NO_MIXED_TYPE_IMPORT, NO_UNCACHED_ACCOUNT_READ],
+      'no-restricted-syntax': ['error', NO_THEN, NO_MIXED_TYPE_IMPORT],
     },
   },
   {
