@@ -14,10 +14,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot({
-      throttlers: [
-        { name: 'default', limit: 120, ttl: 60_000 },
-        { name: 'link', limit: 5, ttl: 60_000 },
-      ],
+      throttlers: [{ name: 'default', limit: 120, ttl: 60_000 }],
     }),
     DatabaseModule,
     ProviderModule,

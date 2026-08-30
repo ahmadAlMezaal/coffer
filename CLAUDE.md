@@ -96,9 +96,9 @@ make migrate       author and apply a migration
 make deploy        apply pending migrations without authoring one
 make seed          seed the user and a business shaped sandbox consent
 make seed-dynamic  seed from the dynamic sandbox user, so sync-new can inject
-make dev           web, api and worker together
-make worker        worker only
-make api           the api only
+make dev           postgres, temporal, then web, api and worker
+make worker        infrastructure, then the worker only
+make api           infrastructure, then the api only
 make web           the dashboard only
 make sync          signal the sync workflow to run now
 make sync-new      inject a sandbox transaction, then signal the workflow

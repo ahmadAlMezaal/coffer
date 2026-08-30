@@ -16,7 +16,7 @@ export class ConsentsController {
 
   @Post()
   @HttpCode(200)
-  @Throttle({ link: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   create(@Body() body: CreateConsentDto): Promise<CreateConsentResponse> {
     return this.consents.create(body.publicToken);
   }
