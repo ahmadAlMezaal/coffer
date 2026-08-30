@@ -37,12 +37,12 @@ Nothing else belongs in any of the three.
 Dependencies point inward and the boundaries are lint errors rather than
 promises anyone has to remember.
 
-| Boundary | Enforced by |
-| --- | --- |
+| Boundary                                                | Enforced by                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------- |
 | Components and pages call a service, never a repository | `no-restricted-imports` on `apps/web/components` and `apps/web/app` |
-| A repository never imports a service | `no-restricted-imports` on `apps/web/lib/repositories` |
-| A service holds rules, not transport | `no-restricted-globals` on `apps/web/lib/services` |
-| `fetch` is banned everywhere except `packages/provider` | `no-restricted-globals` on `apps/**` and `packages/**` |
+| A repository never imports a service                    | `no-restricted-imports` on `apps/web/lib/repositories`              |
+| A service holds rules, not transport                    | `no-restricted-globals` on `apps/web/lib/services`                  |
+| `fetch` is banned everywhere except `packages/provider` | `no-restricted-globals` on `apps/**` and `packages/**`              |
 
 That last rule is the important one. It is what turns "nothing but the worker
 touches the open banking layer" from a convention into a lint error. Outbound
@@ -99,8 +99,8 @@ is what a checkout that has fallen behind wants. After any schema change,
 
 ## Skills
 
-| Skill | Read it before |
-| --- | --- |
-| `temporal-workflows` | Writing or editing anything under `apps/worker` |
-| `open-banking-provider` | Touching `packages/provider` or the sync write path |
-| `database-package` | Changing `schema.prisma` or wondering why a new model does not exist |
+| Skill                   | Read it before                                                       |
+| ----------------------- | -------------------------------------------------------------------- |
+| `temporal-workflows`    | Writing or editing anything under `apps/worker`                      |
+| `open-banking-provider` | Touching `packages/provider` or the sync write path                  |
+| `database-package`      | Changing `schema.prisma` or wondering why a new model does not exist |

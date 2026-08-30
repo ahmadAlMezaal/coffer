@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
+    "seed": "tsx src/scripts/seed.ts",
+    "sync": "tsx src/scripts/sync.ts",
+    "replay": "tsx src/scripts/replay.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -14,7 +17,8 @@
     "@temporalio/activity": "1.23.0",
     "@temporalio/client": "1.23.0",
     "@temporalio/worker": "1.23.0",
-    "@temporalio/workflow": "1.23.0"
+    "@temporalio/workflow": "1.23.0",
+    "dotenv": "17.4.2"
   },
   "devDependencies": {
     "tsx": "4.23.13"

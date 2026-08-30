@@ -7,10 +7,11 @@
     "pnpm": ">=11"
   },
   "scripts": {
-    "postinstall": "pnpm --filter @coffer/database run build",
-    "db:build": "pnpm --filter @coffer/database run build",
+    "postinstall": "pnpm run packages:build",
+    "packages:build": "pnpm --filter @coffer/database run build && pnpm --filter @coffer/provider run build",
+    "db:build": "pnpm run packages:build",
     "dev": "pnpm --parallel --filter @coffer/web --filter @coffer/api --filter @coffer/worker run dev",
-    "build": "pnpm --filter @coffer/database run build && pnpm --filter @coffer/web run build",
+    "build": "pnpm run packages:build && pnpm --filter @coffer/web run build",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

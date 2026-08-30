@@ -6,7 +6,7 @@ TEMPORAL_PID := .temporal/temporal.pid
 TEMPORAL_LOG := .temporal/temporal.log
 TEMPORAL_DB := .temporal/coffer.db
 
-.PHONY: help up down install db-build migrate deploy seed dev worker sync check replay
+.PHONY: help up down install db-build migrate deploy seed dev worker api web sync check replay
 
 help:
 	@grep -hE '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -29,8 +29,8 @@ down: ## Stop postgres and the temporal dev server
 install: ## Install every workspace dependency
 	pnpm install
 
-db-build: ## Generate the prisma client and compile the database package
-	pnpm --filter @coffer/database run build
+db-build: ## Generate the prisma client and compile the built packages
+	pnpm run packages:build
 
 migrate: ## Author a migration from the schema and apply it
 	pnpm --filter @coffer/database exec prisma migrate dev
@@ -39,7 +39,7 @@ deploy: ## Apply migrations that already exist, authoring none
 	pnpm --filter @coffer/database exec prisma migrate deploy
 
 seed: ## Seed the user and a sandbox consent
-	@echo "seed is filled in stage two, see BUILD.md"
+	pnpm --filter @coffer/worker run seed
 
 dev: ## Run web, api and worker together
 	pnpm run dev
@@ -47,8 +47,14 @@ dev: ## Run web, api and worker together
 worker: ## Run the worker on its own
 	pnpm --filter @coffer/worker run dev
 
-sync: ## Trigger the sync workflow by hand for a consent
-	@echo "sync is filled in stage two, see BUILD.md"
+api: ## Run the api on its own
+	pnpm --filter @coffer/api run dev
+
+web: ## Run the dashboard on its own
+	pnpm --filter @coffer/web run dev
+
+sync: ## Inject a sandbox transaction and trigger the sync workflow
+	pnpm --filter @coffer/worker run sync
 
 check: ## Lint, typecheck and test
 	pnpm run lint
@@ -56,4 +62,4 @@ check: ## Lint, typecheck and test
 	pnpm run test
 
 replay: ## Rebuild the normalised tables from the raw payloads
-	@echo "replay is filled in stage two, see BUILD.md"
+	pnpm --filter @coffer/worker run replay
