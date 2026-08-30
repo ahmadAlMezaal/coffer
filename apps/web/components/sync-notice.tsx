@@ -5,15 +5,26 @@ type SyncNoticeProps = {
   state: DashboardState;
   lastSyncedAt: string | null;
   syncError: string | null;
+  apiError: string | null;
 };
 
 const shell = 'rounded-xl border px-4 py-3 text-sm';
 
-export const SyncNotice = ({ state, lastSyncedAt, syncError }: SyncNoticeProps) => {
+export const SyncNotice = ({ state, lastSyncedAt, syncError, apiError }: SyncNoticeProps) => {
   if (state === 'unreachable') {
     return (
       <p className={`${shell} border-red-200 bg-red-50 text-red-700`}>
         The API is not answering on port 3001. Run <code>make dev</code>.
+        {apiError ? ` The connection failed with: ${apiError}.` : ''}
+      </p>
+    );
+  }
+
+  if (state === 'rejected') {
+    return (
+      <p className={`${shell} border-red-200 bg-red-50 text-red-700`}>
+        The API answered, but it rejected the request: {apiError}. The dashboard stays empty until
+        that clears.
       </p>
     );
   }

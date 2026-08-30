@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-import { API_URL } from '../config';
+import { API_URL, API_TIMEOUT_MS } from '../config';
+import type { AxiosResponse } from 'axios';
 import type {
   AccountsResponse,
   ConsentsResponse,
@@ -11,40 +12,80 @@ import type {
   TransactionsResponse,
 } from '@coffer/contracts';
 
-const client = axios.create({ baseURL: API_URL, timeout: 15_000 });
+export type ApiFailureKind = 'unreachable' | 'rejected';
 
-export const getConsents = async (): Promise<ConsentsResponse> => {
-  const response = await client.get<ConsentsResponse>('/consents');
+export class ApiError extends Error {
+  readonly kind: ApiFailureKind;
+  readonly status: number | null;
 
-  return response.data;
+  constructor(kind: ApiFailureKind, status: number | null, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
+const client = axios.create({ baseURL: API_URL, timeout: API_TIMEOUT_MS });
+
+const describeRejection = (response: AxiosResponse): string => {
+  const body = response.data as { message?: unknown } | undefined;
+
+  if (typeof body?.message === 'string') {
+    return `${response.status} ${body.message}`;
+  }
+
+  if (Array.isArray(body?.message)) {
+    return `${response.status} ${body.message.join(', ')}`;
+  }
+
+  return `${response.status} ${response.statusText}`;
 };
 
-export const getAccounts = async (): Promise<AccountsResponse> => {
-  const response = await client.get<AccountsResponse>('/accounts');
+const toApiError = (error: unknown): ApiError => {
+  if (!axios.isAxiosError(error)) {
+    return new ApiError('unreachable', null, 'The request failed before it reached the API.');
+  }
 
-  return response.data;
+  if (error.response) {
+    return new ApiError('rejected', error.response.status, describeRejection(error.response));
+  }
+
+  if (error.code === 'ECONNABORTED') {
+    return new ApiError(
+      'unreachable',
+      null,
+      `The API did not answer within ${API_TIMEOUT_MS / 1000} seconds.`,
+    );
+  }
+
+  return new ApiError('unreachable', null, error.message);
 };
 
-export const getTransactions = async (query: TransactionQuery): Promise<TransactionsResponse> => {
-  const response = await client.get<TransactionsResponse>('/transactions', { params: query });
+const request = async <T>(send: () => Promise<AxiosResponse<T>>): Promise<T> => {
+  try {
+    const response = await send();
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    throw toApiError(error);
+  }
 };
 
-export const getStats = async (): Promise<StatsResponse> => {
-  const response = await client.get<StatsResponse>('/stats');
+export const getConsents = (): Promise<ConsentsResponse> =>
+  request(() => client.get<ConsentsResponse>('/consents'));
 
-  return response.data;
-};
+export const getAccounts = (): Promise<AccountsResponse> =>
+  request(() => client.get<AccountsResponse>('/accounts'));
 
-export const createLinkToken = async (): Promise<CreateLinkTokenResponse> => {
-  const response = await client.post<CreateLinkTokenResponse>('/link-tokens');
+export const getTransactions = (query: TransactionQuery): Promise<TransactionsResponse> =>
+  request(() => client.get<TransactionsResponse>('/transactions', { params: query }));
 
-  return response.data;
-};
+export const getStats = (): Promise<StatsResponse> =>
+  request(() => client.get<StatsResponse>('/stats'));
 
-export const createConsent = async (publicToken: string): Promise<CreateConsentResponse> => {
-  const response = await client.post<CreateConsentResponse>('/consents', { publicToken });
+export const createLinkToken = (): Promise<CreateLinkTokenResponse> =>
+  request(() => client.post<CreateLinkTokenResponse>('/link-tokens'));
 
-  return response.data;
-};
+export const createConsent = (publicToken: string): Promise<CreateConsentResponse> =>
+  request(() => client.post<CreateConsentResponse>('/consents', { publicToken }));

@@ -10,7 +10,7 @@ export class LinkTokensController {
 
   @Post()
   @HttpCode(200)
-  @Throttle({ link: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   create(): Promise<CreateLinkTokenResponse> {
     return this.linkTokens.create();
   }

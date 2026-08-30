@@ -13,7 +13,7 @@ make up          postgres on 5432, temporal dev server on 7233 with a UI on 8233
 make deploy      apply the migrations
 make db-build    generate the prisma client and compile the built packages
 make seed        create the user and a sandbox business with three months of history
-make dev         web on 3000, api on 3001, worker on the coffer-sync task queue
+make dev         brings up `make up`, then web on 3000, api on 3001, worker on the queue
 ```
 
 `.env` needs `PLAID_CLIENT_ID` and `PLAID_SECRET` from

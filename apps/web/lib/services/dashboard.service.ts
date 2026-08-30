@@ -8,7 +8,7 @@ import type {
   TransactionsResponse,
 } from '@coffer/contracts';
 
-export type DashboardState = 'empty' | 'syncing' | 'ready' | 'stale' | 'unreachable';
+export type DashboardState = 'empty' | 'syncing' | 'ready' | 'stale' | 'unreachable' | 'rejected';
 
 export type Dashboard = {
   state: DashboardState;
@@ -18,6 +18,12 @@ export type Dashboard = {
   stats: StatsResponse;
   lastSyncedAt: string | null;
   syncError: string | null;
+  apiError: string | null;
+};
+
+export type Failure = {
+  state: Extract<DashboardState, 'unreachable' | 'rejected'>;
+  apiError: string;
 };
 
 const emptyAccounts: AccountsResponse = { groups: [], totalBalance: '0.00', currency: 'GBP' };
@@ -86,6 +92,18 @@ const resolveState = (
   return 'ready';
 };
 
+export const classifyFailure = (error: unknown): Failure => {
+  if (error instanceof api.ApiError) {
+    return { state: error.kind, apiError: error.message };
+  }
+
+  if (error instanceof Error) {
+    return { state: 'unreachable', apiError: error.message };
+  }
+
+  return { state: 'unreachable', apiError: 'The dashboard could not be read.' };
+};
+
 export const readDashboard = async (query: TransactionQuery): Promise<Dashboard> => {
   try {
     const [consents, accounts, transactions, stats] = await Promise.all([
@@ -105,16 +123,20 @@ export const readDashboard = async (query: TransactionQuery): Promise<Dashboard>
       stats,
       lastSyncedAt: mostRecent(consents.consents),
       syncError: failed?.lastSyncError ?? null,
+      apiError: null,
     };
-  } catch {
+  } catch (error) {
+    const failure = classifyFailure(error);
+
     return {
-      state: 'unreachable',
+      state: failure.state,
       consents: [],
       accounts: emptyAccounts,
       transactions: { transactions: [], nextCursor: null },
       stats: emptyStats,
       lastSyncedAt: null,
       syncError: null,
+      apiError: failure.apiError,
     };
   }
 };

@@ -44,13 +44,13 @@ seed: ## Seed the user and a sandbox business with three months of history
 seed-dynamic: ## Seed from the dynamic sandbox user, so sync-new can inject transactions
 	COFFER_SANDBOX_USER=dynamic pnpm --filter @coffer/worker run seed
 
-dev: ## Run web, api and worker together
+dev: up ## Run web, api and worker together
 	pnpm run dev
 
-worker: ## Run the worker on its own
+worker: up ## Run the worker on its own
 	pnpm --filter @coffer/worker run dev
 
-api: ## Run the api on its own
+api: up ## Run the api on its own
 	pnpm --filter @coffer/api run dev
 
 web: ## Run the dashboard on its own

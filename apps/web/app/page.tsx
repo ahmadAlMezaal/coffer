@@ -47,6 +47,7 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
             state={dashboard.state}
             lastSyncedAt={dashboard.lastSyncedAt}
             syncError={dashboard.syncError}
+            apiError={dashboard.apiError}
           />
         </div>
         <ConnectBank label={dashboard.consents.length === 0 ? 'Connect a bank' : 'Add a bank'} />
