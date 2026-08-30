@@ -41,6 +41,16 @@ export class TemporalService implements OnModuleDestroy {
     }
   }
 
+  async stopSync(consentId: string): Promise<void> {
+    const client = await this.connect();
+
+    try {
+      await client.workflow.getHandle(`sync-${consentId}`).terminate('the consent was revoked');
+    } catch {
+      this.logger.log(`sync-${consentId} was not running, nothing to terminate`);
+    }
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.connection?.close();
   }

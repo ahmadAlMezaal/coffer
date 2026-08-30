@@ -7,9 +7,11 @@ import type {
   ConsentsResponse,
   CreateConsentResponse,
   CreateLinkTokenResponse,
+  RevokeConsentResponse,
   StatsResponse,
   TransactionQuery,
   TransactionsResponse,
+  UserResponse,
 } from '@coffer/contracts';
 
 export type ApiFailureKind = 'unreachable' | 'rejected';
@@ -89,3 +91,8 @@ export const createLinkToken = (): Promise<CreateLinkTokenResponse> =>
 
 export const createConsent = (publicToken: string): Promise<CreateConsentResponse> =>
   request(() => client.post<CreateConsentResponse>('/consents', { publicToken }));
+
+export const deleteConsent = (consentId: string): Promise<RevokeConsentResponse> =>
+  request(() => client.delete<RevokeConsentResponse>(`/consents/${consentId}`));
+
+export const getUser = (): Promise<UserResponse> => request(() => client.get<UserResponse>('/me'));

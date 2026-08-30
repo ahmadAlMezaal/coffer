@@ -10,6 +10,7 @@ import { ProviderModule } from './provider/provider.module';
 import { StatsModule } from './stats/stats.module';
 import { TemporalModule } from './temporal/temporal.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     AccountsModule,
     TransactionsModule,
     StatsModule,
+    UsersModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

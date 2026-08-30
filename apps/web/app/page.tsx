@@ -1,7 +1,6 @@
 import { BalanceCards } from '@/components/balance-cards';
-import { ConnectBank } from '@/components/connect-bank';
-import { RunwayChart } from '@/components/runway-chart';
-import { StatCards } from '@/components/stat-cards';
+import { FlowCard } from '@/components/flow-card';
+import { RunwayCard } from '@/components/runway-card';
 import { SyncNotice } from '@/components/sync-notice';
 import { TransactionFilters } from '@/components/transaction-filters';
 import { TransactionsTable } from '@/components/transactions-table';
@@ -39,10 +38,10 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
   const loading = dashboard.state === 'syncing';
 
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Coffer</h1>
+    <main className="mx-auto flex max-w-[76rem] flex-col gap-6 px-6 py-8 lg:px-10">
+      <header className="min-w-0">
+        <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight">Overview</h1>
+        <div className="mt-1.5">
           <SyncNotice
             state={dashboard.state}
             lastSyncedAt={dashboard.lastSyncedAt}
@@ -50,7 +49,6 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
             apiError={dashboard.apiError}
           />
         </div>
-        <ConnectBank label={dashboard.consents.length === 0 ? 'Connect a bank' : 'Add a bank'} />
       </header>
 
       <BalanceCards
@@ -60,21 +58,50 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
         loading={loading}
       />
 
-      <StatCards stats={dashboard.stats} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <RunwayCard
+          points={dashboard.stats.projection}
+          currency={dashboard.stats.currency}
+          netBurn={dashboard.stats.netBurn}
+          runwayLabel={dashboard.stats.runwayLabel}
+          cashZeroAt={dashboard.stats.cashZeroAt}
+        />
 
-      <RunwayChart
-        points={dashboard.stats.projection}
-        currency={dashboard.stats.currency}
-        netBurn={dashboard.stats.netBurn}
-      />
+        <FlowCard
+          title="Monthly spend"
+          amount={dashboard.stats.monthlyOutflow}
+          currency={dashboard.stats.currency}
+          changePercent={dashboard.stats.outflowChangePercent}
+          series={dashboard.stats.monthlySeries}
+          read={(total) => total.outflow}
+          goodWhenRising={false}
+        />
+
+        <FlowCard
+          title="Monthly income"
+          amount={dashboard.stats.monthlyInflow}
+          currency={dashboard.stats.currency}
+          changePercent={dashboard.stats.inflowChangePercent}
+          series={dashboard.stats.monthlySeries}
+          read={(total) => total.inflow}
+          goodWhenRising
+        />
+      </div>
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium text-neutral-900">Transactions</h2>
+          <h2 className="font-display text-ink text-lg font-bold">Transactions</h2>
           <TransactionFilters groups={dashboard.accounts.groups} query={query} />
         </div>
 
         <TransactionsTable transactions={dashboard.transactions.transactions} loading={loading} />
+
+        {dashboard.transactions.nextCursor === null ? null : (
+          <p className="text-ink-faint text-xs">
+            Showing the {dashboard.transactions.transactions.length} most recent. Narrow the dates
+            to see further back.
+          </p>
+        )}
       </section>
     </main>
   );

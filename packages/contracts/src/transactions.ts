@@ -1,9 +1,12 @@
+import type { Institution } from './consents';
+
 export type TransactionDirection = 'in' | 'out';
 
 export type TransactionSummary = {
   id: string;
   accountId: string;
   accountName: string;
+  institution: Institution;
   amount: string;
   direction: TransactionDirection;
   currency: string;

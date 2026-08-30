@@ -14,6 +14,12 @@ const toSummary = (transaction: TransactionRecord): TransactionSummary => ({
   id: transaction.id,
   accountId: transaction.accountId,
   accountName: transaction.account.name,
+  institution: {
+    id: transaction.account.accessConsent.institutionId,
+    name: transaction.account.accessConsent.institutionName,
+    logo: transaction.account.accessConsent.institutionLogo,
+    colour: transaction.account.accessConsent.institutionColour,
+  },
   amount: transaction.amount.toFixed(2),
   direction: transaction.direction,
   currency: transaction.currency,

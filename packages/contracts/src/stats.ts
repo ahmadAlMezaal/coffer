@@ -3,6 +3,12 @@ export type RunwayPoint = {
   balance: string;
 };
 
+export type MonthlyTotal = {
+  month: string;
+  inflow: string;
+  outflow: string;
+};
+
 export type StatsResponse = {
   currency: string;
   totalBalance: string;
@@ -18,4 +24,5 @@ export type StatsResponse = {
   periodEnd: string;
   computedAt: string | null;
   projection: RunwayPoint[];
+  monthlySeries: MonthlyTotal[];
 };
