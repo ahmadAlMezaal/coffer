@@ -66,3 +66,28 @@ Nothing retries. The balances are simply wrong, and there is no signal anywhere
 that says so. This is the single most expensive mistake available in this
 codebase, so treat the cursor write as the commit at the end of the loop and
 nothing earlier.
+
+## Waiting
+
+The sync loop waits with `workflow.condition(() => syncRequested, interval)`
+rather than `workflow.sleep(interval)`, so a `syncNow` signal can cut the wait
+short. `make sync` sends that signal, and a webhook handler would send the same
+one.
+
+The interval is not fixed. While the provider reports its historical backfill is
+still running, the loop waits twenty seconds rather than four hours. A fresh
+consent otherwise shows an empty table until the next scheduled tick.
+
+## Running more than one worker
+
+Every worker polling `coffer-sync` will pick up activities, including one you
+started an hour ago and forgot. A stale worker running old code will happily
+serve half the activities in a run, and the result is a workflow that half
+works with no error anywhere.
+
+If a change to an activity or a domain function appears to have had no effect,
+check for a second worker before debugging the code:
+
+```
+ps aux | grep "src/main.ts"
+```

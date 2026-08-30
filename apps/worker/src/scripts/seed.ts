@@ -1,17 +1,30 @@
 import '../config/env';
 
 import { prisma } from '@coffer/database';
-import { createSandboxPublicToken } from '@coffer/provider';
+import { createDynamicSandboxPublicToken, createSandboxPublicToken } from '@coffer/provider';
 
 import { linkPublicToken } from './link';
 import { businessSandboxUser } from './sandbox-business';
 import { startSync, withTemporalClient } from './temporal-client';
 
-const run = async () => {
-  const publicToken = await createSandboxPublicToken(businessSandboxUser(new Date()));
-  const consentId = await linkPublicToken(publicToken);
+const dynamicSandbox = process.env.COFFER_SANDBOX_USER === 'dynamic';
 
-  console.warn(`Seeded consent ${consentId}`);
+const publicToken = async (): Promise<string> => {
+  if (dynamicSandbox) {
+    return createDynamicSandboxPublicToken();
+  }
+
+  return createSandboxPublicToken(businessSandboxUser(new Date()));
+};
+
+const run = async () => {
+  const consentId = await linkPublicToken(await publicToken());
+
+  console.warn(
+    dynamicSandbox
+      ? `Seeded consent ${consentId} from the dynamic sandbox user, so make sync-new can inject`
+      : `Seeded consent ${consentId} from the custom business sandbox user`,
+  );
 
   await withTemporalClient(async (client) => {
     await startSync(client, consentId);

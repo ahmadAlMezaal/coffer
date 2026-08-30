@@ -16,6 +16,7 @@ export type FetchedPage = {
   rawPayloadId: string;
   nextCursor: string;
   hasMore: boolean;
+  historyComplete: boolean;
 };
 
 export type AppliedPage = {
@@ -47,6 +48,7 @@ export const fetchPage = async (input: {
     rawPayloadId,
     nextCursor: captured.data.nextCursor,
     hasMore: captured.data.hasMore,
+    historyComplete: captured.data.historyComplete,
   };
 };
 

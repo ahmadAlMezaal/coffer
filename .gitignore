@@ -19,3 +19,5 @@ next-env.d.ts
 docs/ai/*.jsonl
 
 .temporal/
+
+.playwright-mcp/

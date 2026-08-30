@@ -34,15 +34,15 @@ export const monthWindows = (year: number, month: number, count: number) =>
   });
 
 const averageNetBurn = (trailing: MonthTotals[], currentMonth: MonthTotals): number => {
-  const activity = trailing.reduce((running, month) => running + month.inflow + month.outflow, 0);
+  const active = trailing.filter((month) => month.inflow + month.outflow > 0);
 
-  if (activity === 0) {
+  if (active.length === 0) {
     return currentMonth.outflow - currentMonth.inflow;
   }
 
-  const burn = trailing.reduce((running, month) => running + (month.outflow - month.inflow), 0);
+  const burn = active.reduce((running, month) => running + (month.outflow - month.inflow), 0);
 
-  return burn / trailing.length;
+  return burn / active.length;
 };
 
 export const computeStats = (input: StatsInput): ComputedStats => {

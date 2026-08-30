@@ -52,7 +52,13 @@ faith.
 
 Neither app may import a runtime value from a source-only workspace package,
 only types. A runtime import dies at boot while the typecheck stays green.
-`@coffer/database` is the exception, because it ships a built `dist`.
+`@coffer/database` and `@coffer/provider` are the exceptions, because both ship
+a built `dist`.
+
+`fetch` being banned outside `packages/provider` applies to `apps/web` too, so
+the web repositories reach the API through axios. That is the same rule the API
+follows for its own outbound calls, and it carries the timeout and the error
+shape rather than leaving both to chance.
 
 ## Layout
 
@@ -69,11 +75,15 @@ Packages are source-only. `main` points at `src/index.ts` and Next transpiles
 them through `transpilePackages`, so there is no per-package build step and no
 build ordering to maintain.
 
-`packages/database` is the one exception. Prisma 7 generates TypeScript rather
-than compiled JavaScript, and both `apps/api` and `apps/worker` run on swc,
-which compiles only its own sources. So that package compiles itself to
-CommonJS `dist`, `make db-build` runs ahead of typecheck, build and dev, and
-`postinstall` runs it so a fresh clone works.
+`packages/database` and `packages/provider` are the exceptions. Prisma 7
+generates TypeScript rather than compiled JavaScript, and `apps/api` runs on
+swc, which compiles only its own sources, so neither package would ever be
+compiled for it. Both therefore compile themselves to CommonJS `dist`,
+`make db-build` runs ahead of typecheck, build and dev, and `postinstall` runs
+it so a fresh clone works.
+
+`apps/api` imports `@coffer/provider` for the two link-time Plaid calls, which
+is why the provider needed a `dist` as well.
 
 ## Make targets
 
@@ -81,13 +91,17 @@ CommonJS `dist`, `make db-build` runs ahead of typecheck, build and dev, and
 make up            postgres and the temporal dev server
 make down          stop both
 make install       pnpm install
-make db-build      prisma generate and compile the database package
+make db-build      prisma generate and compile the built packages
 make migrate       author and apply a migration
 make deploy        apply pending migrations without authoring one
-make seed          seed the user and a sandbox consent
+make seed          seed the user and a business shaped sandbox consent
+make seed-dynamic  seed from the dynamic sandbox user, so sync-new can inject
 make dev           web, api and worker together
 make worker        worker only
-make sync          trigger the sync workflow manually for a consent
+make api           the api only
+make web           the dashboard only
+make sync          signal the sync workflow to run now
+make sync-new      inject a sandbox transaction, then signal the workflow
 make check         lint, typecheck and test
 make replay        rebuild normalised tables from raw
 ```

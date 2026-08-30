@@ -74,3 +74,43 @@ This gives four things:
 
 `responseHash` exists so an identical repeat payload can be recognised and
 skipped rather than reprocessed.
+
+## Accounts arrive with the transactions
+
+`/transactions/sync` returns an `accounts` array alongside `added`, `modified`
+and `removed`. The write path upserts those accounts from the same payload
+before it writes any transactions.
+
+This is not an optimisation, it is what makes the ordering safe. Transactions
+carry a foreign key to an account, so a transaction for an account that appeared
+since the last sync would fail its insert if accounts were only refreshed
+afterwards. Taking the accounts from the payload you already have costs no extra
+call and removes the ordering hazard entirely.
+
+## The backfill is not instant
+
+A newly linked item returns `transactions_update_status: NOT_READY` and an empty
+`added` array while Plaid pulls history from the institution. That is a
+legitimate empty sync, not a failure, and it can last seconds to minutes.
+
+Anything that polls must read `transactions_update_status` and keep polling on a
+short interval until it reads `HISTORICAL_UPDATE_COMPLETE`. Treating the first
+empty response as "nothing to do" and falling back to the normal four-hourly
+schedule leaves a freshly linked account showing an empty table for four hours.
+
+## The sandbox
+
+`days_requested` is set to 730 on both the link token and the sync call, and the
+Plaid sandbox still returns about 90 days for a custom user. That is a sandbox
+ceiling, not a bug to chase.
+
+Two sandbox user shapes, and they do not overlap. `user_custom` takes a JSON
+ledger as its password and gives whatever data you write, which is the only way
+to get business-shaped GBP figures, but its transaction set is fixed and
+`/sandbox/transactions/create` does nothing to it. `user_transactions_dynamic`
+accepts injected transactions but only serves Plaid's default US retail
+spending. `make seed` uses the first, `make seed-dynamic` the second.
+
+One more sandbox trap: in the `user_custom` JSON, `version` must be a number.
+A string there is rejected as `INVALID_CREDENTIALS`, which points nowhere near
+the actual problem. Omitting it entirely is safest.

@@ -56,6 +56,7 @@ export type TransactionsPage = {
 export type PageCounts = {
   nextCursor: string;
   hasMore: boolean;
+  historyComplete: boolean;
   added: number;
   modified: number;
   removed: number;

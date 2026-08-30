@@ -5,8 +5,10 @@ description: Use when changing schema.prisma, adding a migration, or when a mode
 
 # The database package
 
-`packages/database` is the only workspace package with a build step, and this
-is why.
+`packages/database` is one of the two workspace packages with a build step, and
+this is why. `packages/provider` is the other, for the same reason: `apps/api`
+imports it at runtime for the two link-time Plaid calls. `make db-build` builds
+both.
 
 Prisma 7 generates TypeScript into `src/generated` rather than compiled
 JavaScript. `apps/api` and `apps/worker` both compile with swc, and swc
@@ -33,6 +35,11 @@ make db-build
 
 `postinstall` runs the same thing, so a fresh clone works without anyone having
 to know this.
+
+The same trap applies to `packages/provider`. Change a type in
+`packages/provider/src` and `apps/worker` will typecheck against the old `dist`
+until `make db-build` runs, so a field you just added reads as a property that
+does not exist.
 
 ## Migrations
 

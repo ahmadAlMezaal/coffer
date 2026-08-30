@@ -6,7 +6,7 @@ TEMPORAL_PID := .temporal/temporal.pid
 TEMPORAL_LOG := .temporal/temporal.log
 TEMPORAL_DB := .temporal/coffer.db
 
-.PHONY: help up down install db-build migrate deploy seed dev worker api web sync check replay
+.PHONY: help up down install db-build migrate deploy seed seed-dynamic dev worker api web sync sync-new check replay
 
 help:
 	@grep -hE '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -38,8 +38,11 @@ migrate: ## Author a migration from the schema and apply it
 deploy: ## Apply migrations that already exist, authoring none
 	pnpm --filter @coffer/database exec prisma migrate deploy
 
-seed: ## Seed the user and a sandbox consent
+seed: ## Seed the user and a sandbox business with three months of history
 	pnpm --filter @coffer/worker run seed
+
+seed-dynamic: ## Seed from the dynamic sandbox user, so sync-new can inject transactions
+	COFFER_SANDBOX_USER=dynamic pnpm --filter @coffer/worker run seed
 
 dev: ## Run web, api and worker together
 	pnpm run dev
@@ -53,8 +56,11 @@ api: ## Run the api on its own
 web: ## Run the dashboard on its own
 	pnpm --filter @coffer/web run dev
 
-sync: ## Inject a sandbox transaction and trigger the sync workflow
+sync: ## Trigger the sync workflow by hand for the newest consent
 	pnpm --filter @coffer/worker run sync
+
+sync-new: ## Inject a sandbox transaction, then trigger the sync workflow
+	COFFER_INJECT_TRANSACTIONS=true pnpm --filter @coffer/worker run sync
 
 check: ## Lint, typecheck and test
 	pnpm run lint

@@ -5,6 +5,7 @@ export { createLinkToken, exchangePublicToken, fetchInstitutionName } from './li
 export { normaliseAccount, normaliseTransaction } from './normalise';
 export {
   SANDBOX_INSTITUTION_ID,
+  createDynamicSandboxPublicToken,
   createSandboxPublicToken,
   createSandboxTransactions,
 } from './sandbox';

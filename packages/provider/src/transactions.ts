@@ -5,6 +5,8 @@ import type { TransactionsSyncResponse } from 'plaid';
 import type { Captured, PageCounts, TransactionsPage } from './types';
 
 const PAGE_SIZE = 250;
+const DAYS_REQUESTED = 730;
+const HISTORY_COMPLETE = 'HISTORICAL_UPDATE_COMPLETE';
 
 export const parseTransactionsPage = (body: unknown): TransactionsPage => {
   const response = body as TransactionsSyncResponse;
@@ -27,7 +29,7 @@ export const fetchTransactionsPage = async (
     access_token: accessToken,
     cursor: cursor ?? undefined,
     count: PAGE_SIZE,
-    options: { include_personal_finance_category: true },
+    options: { include_personal_finance_category: true, days_requested: DAYS_REQUESTED },
   });
 
   return {
@@ -35,6 +37,7 @@ export const fetchTransactionsPage = async (
     data: {
       nextCursor: response.data.next_cursor,
       hasMore: response.data.has_more,
+      historyComplete: String(response.data.transactions_update_status) === HISTORY_COMPLETE,
       added: response.data.added.length,
       modified: response.data.modified.length,
       removed: response.data.removed.length,

@@ -1,6 +1,6 @@
 import type { RunwayPoint } from '@coffer/contracts';
 
-const MONTHS_PROJECTED = 24;
+const MONTHS_PROJECTED = 60;
 
 export const runwayLabel = (runwayDays: number | null): string => {
   if (runwayDays === null || runwayDays <= 0) {

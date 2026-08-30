@@ -4,6 +4,8 @@ import { capture } from './capture';
 import { plaidClient } from './client';
 import type { Captured, LinkToken, LinkedItem } from './types';
 
+const DAYS_REQUESTED = 730;
+
 export const createLinkToken = async (userId: string): Promise<LinkToken> => {
   const response = await plaidClient().linkTokenCreate({
     client_name: 'Coffer',
@@ -11,6 +13,7 @@ export const createLinkToken = async (userId: string): Promise<LinkToken> => {
     country_codes: [CountryCode.Gb, CountryCode.Us],
     user: { client_user_id: userId },
     products: [Products.Transactions],
+    transactions: { days_requested: DAYS_REQUESTED },
   });
 
   return {

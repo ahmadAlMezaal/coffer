@@ -36,6 +36,21 @@ describe('computeStats', () => {
     expect(result.cashZeroAt).toBeNull();
   });
 
+  it('averages over the months that have history, not over three empty ones', () => {
+    const result = computeStats({
+      totalBalance: 100000,
+      currentMonth: { inflow: 22500, outflow: 28524.44 },
+      trailing: [
+        { inflow: 22500, outflow: 28524.44 },
+        { inflow: 22500, outflow: 28524.44 },
+        { inflow: 0, outflow: 0 },
+      ],
+      today,
+    });
+
+    expect(result.netBurn).toBeCloseTo(6024.44, 2);
+  });
+
   it('falls back to the current month when there is no trailing history', () => {
     const result = computeStats({
       totalBalance: 60000,

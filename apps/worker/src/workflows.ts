@@ -23,6 +23,7 @@ export type SyncConsentInput = {
 };
 
 const SYNC_INTERVAL = '4 hours';
+const BACKFILL_INTERVAL = '20 seconds';
 const ITERATIONS_BEFORE_CONTINUE_AS_NEW = 30;
 const MAX_PAGES_PER_RUN = 200;
 
@@ -44,6 +45,7 @@ export const syncConsentWorkflow = async (input: SyncConsentInput): Promise<void
     let added = 0;
     let modified = 0;
     let removed = 0;
+    let historyComplete = true;
 
     try {
       let cursor = run.cursor;
@@ -65,6 +67,7 @@ export const syncConsentWorkflow = async (input: SyncConsentInput): Promise<void
         modified += applied.modified;
         removed += applied.removed;
         cursor = page.nextCursor;
+        historyComplete = page.historyComplete;
         pages += 1;
 
         if (!page.hasMore || pages >= MAX_PAGES_PER_RUN) {
@@ -99,7 +102,10 @@ export const syncConsentWorkflow = async (input: SyncConsentInput): Promise<void
     iteration += 1;
 
     syncRequested = false;
-    await workflow.condition(() => syncRequested, SYNC_INTERVAL);
+    await workflow.condition(
+      () => syncRequested,
+      historyComplete ? SYNC_INTERVAL : BACKFILL_INTERVAL,
+    );
   }
 
   await workflow.continueAsNew<typeof syncConsentWorkflow>({
