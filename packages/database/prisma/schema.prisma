@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ConsentStatus {
+  processing
+  active
+  reauth_required
+  revoked
+}
+
+enum Direction {
+  in
+  out
+}
+
+enum SyncRunStatus {
+  running
+  succeeded
+  failed
+}
+
+model User {
+  id        String          @id @default(uuid()) @db.Uuid
+  email     String          @unique
+  createdAt DateTime        @default(now())
+  consents  AccessConsent[]
+  stats     StatsSnapshot[]
+
+  @@map("users")
+}
+
+model AccessConsent {
+  id              String               @id @default(uuid()) @db.Uuid
+  userId          String               @db.Uuid
+  user            User                 @relation(fields: [userId], references: [id])
+  provider        String               @default("plaid")
+  providerItemId  String               @unique
+  accessToken     String
+  institutionId   String?
+  institutionName String?
+  status          ConsentStatus        @default(processing)
+  syncCursor      String?
+  consentedAt     DateTime             @default(now())
+  expiresAt       DateTime?
+  lastSyncedAt    DateTime?
+  createdAt       DateTime             @default(now())
+  accounts        Account[]
+  syncRuns        SyncRun[]
+  rawPayloads     RawProviderPayload[]
+
+  @@index([userId])
+  @@map("access_consents")
+}
+
+model Account {
+  id                String        @id @default(uuid()) @db.Uuid
+  accessConsentId   String        @db.Uuid
+  accessConsent     AccessConsent @relation(fields: [accessConsentId], references: [id])
+  providerAccountId String        @unique
+  name              String
+  mask              String?
+  type              String
+  subtype           String?
+  currency          String        @default("GBP")
+  currentBalance    Decimal       @db.Decimal(14, 2)
+  availableBalance  Decimal?      @db.Decimal(14, 2)
+  balanceAsOf       DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+  transactions      Transaction[]
+
+  @@index([accessConsentId])
+  @@map("accounts")
+}
+
+model Transaction {
+  id                     String        @id @default(uuid()) @db.Uuid
+  accountId              String        @db.Uuid
+  account                Account       @relation(fields: [accountId], references: [id])
+  providerTransactionId  String        @unique
+  amount                 Decimal       @db.Decimal(14, 2)
+  direction              Direction
+  currency               String        @default("GBP")
+  bookedAt               DateTime      @db.Date
+  description            String
+  merchantName           String?
+  category               String?
+  paymentMethod          String?
+  isInternalTransfer     Boolean       @default(false)
+  internalTransferPairId String?       @db.Uuid
+  internalTransferPair   Transaction?  @relation("InternalTransfer", fields: [internalTransferPairId], references: [id], onDelete: SetNull)
+  pairedWith             Transaction[] @relation("InternalTransfer")
+  removedAt              DateTime?
+  createdAt              DateTime      @default(now())
+
+  @@index([accountId, bookedAt(sort: Desc)])
+  @@index([accountId, amount, bookedAt])
+  @@map("transactions")
+}
+
+model RawProviderPayload {
+  id              String        @id @default(uuid()) @db.Uuid
+  accessConsentId String        @db.Uuid
+  accessConsent   AccessConsent @relation(fields: [accessConsentId], references: [id])
+  syncRunId       String?       @db.Uuid
+  syncRun         SyncRun?      @relation(fields: [syncRunId], references: [id])
+  provider        String        @default("plaid")
+  endpoint        String
+  requestCursor   String?
+  responseBody    Json
+  responseHash    String
+  httpStatus      Int
+  receivedAt      DateTime      @default(now())
+
+  @@index([accessConsentId, receivedAt(sort: Desc)])
+  @@index([responseHash])
+  @@map("raw_provider_payloads")
+}
+
+model StatsSnapshot {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id])
+  periodStart    DateTime  @db.Date
+  periodEnd      DateTime  @db.Date
+  totalBalance   Decimal   @db.Decimal(14, 2)
+  monthlyInflow  Decimal   @db.Decimal(14, 2)
+  monthlyOutflow Decimal   @db.Decimal(14, 2)
+  netBurn        Decimal   @db.Decimal(14, 2)
+  runwayDays     Int?
+  cashZeroAt     DateTime? @db.Date
+  computedAt     DateTime  @default(now())
+
+  @@index([userId, periodStart])
+  @@map("stats_snapshots")
+}
+
+model SyncRun {
+  id                   String               @id @default(uuid()) @db.Uuid
+  accessConsentId      String               @db.Uuid
+  accessConsent        AccessConsent        @relation(fields: [accessConsentId], references: [id])
+  workflowId           String
+  status               SyncRunStatus        @default(running)
+  transactionsAdded    Int                  @default(0)
+  transactionsModified Int                  @default(0)
+  transactionsRemoved  Int                  @default(0)
+  error                String?
+  startedAt            DateTime             @default(now())
+  finishedAt           DateTime?
+  rawPayloads          RawProviderPayload[]
+
+  @@index([accessConsentId])
+  @@map("sync_runs")
+}
