@@ -66,16 +66,7 @@ to the authenticated user who requested the link token.
 
 ## Denial of service
 
-**`GET /transactions` is cheap to abuse and does bounded work only because it
-was written that way.** `limit` is capped at 200 and validated as an integer,
-and paging is keyset rather than offset, so a deep page does not get slower. Had
-either been missing, `?limit=1000000` or `?offset=5000000` would be a one-line
-denial of service against a table that grows without bound.
-
-The `counterparty` filter compiles to two `ILIKE '%term%'` predicates, which
-cannot use an index. On a large transactions table that is a full scan per
-request, and it is the one endpoint an attacker would aim at. Production wants a
-trigram index or a real search index.
+GET /transactions pages by offset, and deep offsets get slower. limit is capped at 200 and validated as an integer, so ?limit=1000000 does nothing. offset is not bounded the same way, and Prisma's skip compiles to a SQL OFFSET, which makes the database walk and discard every preceding row. On a transactions table that grows without bound, ?offset=5000000 is a slow query an attacker can issue cheaply and repeatedly. Offset was chosen deliberately, because the table shows "Showing 26 to 50 of 96" and a Previous link, and a cursor can answer neither. Production would keep the visible count as a separate cached or estimated query and page the rows by keyset.
 
 **The workflow retries a failing bank forever.** A sync run that fails is caught,
 recorded and retried on the next tick rather than killing the workflow. That is
