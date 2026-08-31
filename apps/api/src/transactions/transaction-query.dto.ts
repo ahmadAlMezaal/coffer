@@ -7,6 +7,10 @@ export class TransactionQueryDto {
   accountId?: string;
 
   @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
   @IsISO8601()
   from?: string;
 
@@ -19,8 +23,10 @@ export class TransactionQueryDto {
   counterparty?: string;
 
   @IsOptional()
-  @IsUUID()
-  cursor?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
 
   @IsOptional()
   @Type(() => Number)

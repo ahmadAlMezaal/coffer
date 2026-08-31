@@ -1,44 +1,38 @@
 import { BalanceCards } from '@/components/balance-cards';
+import { ConnectingBanner } from '@/components/connecting-banner';
 import { FlowCard } from '@/components/flow-card';
+import { Pagination } from '@/components/pagination';
 import { RunwayCard } from '@/components/runway-card';
 import { SyncNotice } from '@/components/sync-notice';
+import { SyncWatcher } from '@/components/sync-watcher';
 import { TransactionFilters } from '@/components/transaction-filters';
 import { TransactionsTable } from '@/components/transactions-table';
 import { readDashboard } from '@/lib/services/dashboard.service';
-import type { TransactionQuery } from '@coffer/contracts';
+import { PAGE_SIZE, readFilters } from '@/lib/transactions-query';
 
 export const dynamic = 'force-dynamic';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const single = (value: string | string[] | undefined): string | undefined => {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
-  if (value === '') {
-    return undefined;
-  }
-
-  return value;
-};
-
 const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
-  const params = await searchParams;
+  const filters = readFilters(await searchParams);
 
-  const query: TransactionQuery = {
-    accountId: single(params.accountId),
-    from: single(params.from),
-    to: single(params.to),
-    counterparty: single(params.counterparty),
-    limit: 50,
-  };
+  const dashboard = await readDashboard({
+    accountId: filters.accountId,
+    category: filters.category,
+    from: filters.from,
+    to: filters.to,
+    counterparty: filters.counterparty,
+    offset: (filters.page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+  });
 
-  const dashboard = await readDashboard(query);
-  const loading = dashboard.state === 'syncing';
+  const connecting = dashboard.state === 'syncing';
 
   return (
     <main className="mx-auto flex max-w-[76rem] flex-col gap-6 px-6 py-8 lg:px-10">
+      {connecting ? <SyncWatcher /> : null}
+
       <header className="min-w-0">
         <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight">Overview</h1>
         <div className="mt-1.5">
@@ -51,11 +45,13 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
         </div>
       </header>
 
+      <ConnectingBanner consents={dashboard.consents} />
+
       <BalanceCards
         groups={dashboard.accounts.groups}
         totalBalance={dashboard.accounts.totalBalance}
         currency={dashboard.accounts.currency}
-        loading={loading}
+        loading={connecting}
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -75,6 +71,7 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
           series={dashboard.stats.monthlySeries}
           read={(total) => total.outflow}
           goodWhenRising={false}
+          filters={filters}
         />
 
         <FlowCard
@@ -85,23 +82,32 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
           series={dashboard.stats.monthlySeries}
           read={(total) => total.inflow}
           goodWhenRising
+          filters={filters}
         />
       </div>
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-ink text-lg font-bold">Transactions</h2>
-          <TransactionFilters groups={dashboard.accounts.groups} query={query} />
+          <TransactionFilters
+            groups={dashboard.accounts.groups}
+            categories={dashboard.categories}
+            filters={filters}
+          />
         </div>
 
-        <TransactionsTable transactions={dashboard.transactions.transactions} loading={loading} />
+        <TransactionsTable
+          transactions={dashboard.transactions.transactions}
+          filters={filters}
+          loading={connecting}
+        />
 
-        {dashboard.transactions.nextCursor === null ? null : (
-          <p className="text-ink-faint text-xs">
-            Showing the {dashboard.transactions.transactions.length} most recent. Narrow the dates
-            to see further back.
-          </p>
-        )}
+        <Pagination
+          filters={filters}
+          total={dashboard.transactions.total}
+          offset={dashboard.transactions.offset}
+          shown={dashboard.transactions.transactions.length}
+        />
       </section>
     </main>
   );

@@ -29,7 +29,10 @@ const RootLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <html lang="en-GB" className={`${inter.variable} ${manrope.variable}`}>
-      <body className="bg-ground text-ink min-h-screen font-sans antialiased">
+      <body
+        suppressHydrationWarning
+        className="bg-ground text-ink min-h-screen font-sans antialiased"
+      >
         <div className="flex min-h-screen">
           <Sidebar user={user} initiallyExpanded={expanded} />
           <div className="min-w-0 flex-1">{children}</div>

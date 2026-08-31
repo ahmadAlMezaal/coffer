@@ -1,7 +1,9 @@
 import { BankMark } from '@/components/bank-mark';
 import { ConnectBank } from '@/components/connect-bank';
+import { ConnectingBanner } from '@/components/connecting-banner';
 import { ConsentStatusPill } from '@/components/consent-status';
 import { DisconnectBank } from '@/components/disconnect-bank';
+import { SyncWatcher } from '@/components/sync-watcher';
 import { preciseMoney, relativeTime, shortDate } from '@/lib/format';
 import { readLinkedBanks } from '@/lib/services/dashboard.service';
 import type { ConsentSummary } from '@coffer/contracts';
@@ -13,9 +15,11 @@ const consentFor = (consents: ConsentSummary[], consentId: string): ConsentSumma
 
 const AccountsPage = async () => {
   const { state, consents, accounts, apiError } = await readLinkedBanks();
+  const connecting = consents.some((consent) => consent.status === 'processing');
 
   return (
     <main className="mx-auto flex max-w-[76rem] flex-col gap-6 px-6 py-8 lg:px-10">
+      {connecting ? <SyncWatcher /> : null}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight">Accounts</h1>
@@ -26,11 +30,13 @@ const AccountsPage = async () => {
         <ConnectBank label={consents.length === 0 ? 'Connect a bank' : 'Add a bank'} />
       </header>
 
+      <ConnectingBanner consents={consents} />
+
       {apiError === null ? null : (
         <p className="text-outflow border-outflow/20 bg-outflow/5 rounded-lg border px-3 py-2 text-sm">
           {state === 'unreachable'
-            ? `The API is not answering on port 3001. Run make dev. The connection failed with: ${apiError}.`
-            : `The API rejected the request: ${apiError}.`}
+            ? `Coffer cannot reach its own API on port 3001. Run make dev. The connection failed with: ${apiError}.`
+            : `The API turned the request down: ${apiError}.`}
         </p>
       )}
 
@@ -38,8 +44,7 @@ const AccountsPage = async () => {
         <div className="card flex flex-col items-center gap-2 px-6 py-16 text-center">
           <p className="font-display text-ink text-lg font-bold">No banks connected</p>
           <p className="text-ink-muted max-w-sm text-sm">
-            Connect a bank to pull balances and transactions, or run <code>make seed</code> for a
-            sandbox business with months of history.
+            Connect your first bank to see your balances, spending and runway in one place.
           </p>
         </div>
       ) : null}
@@ -98,7 +103,7 @@ const AccountsPage = async () => {
                 <dt className="eyebrow">Last synced</dt>
                 <dd className="text-ink mt-1.5 text-sm font-medium">
                   {group.lastSyncedAt === null
-                    ? 'Not synced yet'
+                    ? 'Waiting for the first update'
                     : relativeTime(group.lastSyncedAt)}
                 </dd>
               </div>
@@ -106,7 +111,7 @@ const AccountsPage = async () => {
 
             {consent?.lastSyncError == null ? null : (
               <p className="text-caution border-hairline bg-caution/5 border-b px-5 py-3 text-sm">
-                The last sync failed: {consent.lastSyncError}
+                We could not reach this bank on the last try. We will keep trying in the background.
               </p>
             )}
 
@@ -121,7 +126,7 @@ const AccountsPage = async () => {
                     <p className="text-ink-faint mt-0.5 text-xs">
                       {account.subtype ?? account.type}
                       {account.mask === null ? '' : ` ・ ••${account.mask}`}
-                      {` ・ balance as of ${relativeTime(account.balanceAsOf)}`}
+                      {` ・ updated ${relativeTime(account.balanceAsOf)}`}
                     </p>
                   </div>
                   <div className="text-right">
