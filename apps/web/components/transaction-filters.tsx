@@ -5,52 +5,35 @@ import { useEffect, useState, useTransition } from 'react';
 
 import { DateRangePicker } from '@/components/date-range-picker';
 import { SearchIcon } from '@/components/icons';
-import type { AccountGroup, TransactionQuery } from '@coffer/contracts';
+import { filtersHref } from '@/lib/transactions-query';
+import type { AccountGroup } from '@coffer/contracts';
+import type { TransactionFilters as Filters } from '@/lib/transactions-query';
 
 type TransactionFiltersProps = {
   groups: AccountGroup[];
-  query: TransactionQuery;
+  categories: string[];
+  filters: Filters;
 };
 
 const SEARCH_DEBOUNCE_MS = 400;
 
-const toHref = (query: TransactionQuery): string => {
-  const params = new URLSearchParams();
+const field =
+  'border-hairline bg-surface text-ink hover:border-ink-faint rounded-lg border px-3 py-2 text-sm font-medium transition-colors';
 
-  if (query.accountId) {
-    params.set('accountId', query.accountId);
-  }
-
-  if (query.from) {
-    params.set('from', query.from);
-  }
-
-  if (query.to) {
-    params.set('to', query.to);
-  }
-
-  if (query.counterparty) {
-    params.set('counterparty', query.counterparty);
-  }
-
-  const search = params.toString();
-
-  return search === '' ? '/' : `/?${search}`;
-};
-
-export const TransactionFilters = ({ groups, query }: TransactionFiltersProps) => {
-  const { accountId, from, to } = query;
-  const applied = query.counterparty ?? '';
+export const TransactionFilters = ({ groups, categories, filters }: TransactionFiltersProps) => {
+  const { accountId, category, from, to } = filters;
+  const applied = filters.counterparty ?? '';
 
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [counterparty, setCounterparty] = useState(applied);
 
-  const apply = (changes: Partial<TransactionQuery>) => {
+  const apply = (changes: Partial<Filters>) => {
     startTransition(() => {
-      router.replace(toHref({ accountId, from, to, counterparty: applied, ...changes }), {
-        scroll: false,
-      });
+      router.replace(
+        filtersHref({ accountId, category, from, to, counterparty: applied, ...changes, page: 1 }),
+        { scroll: false },
+      );
     });
   };
 
@@ -61,14 +44,22 @@ export const TransactionFilters = ({ groups, query }: TransactionFiltersProps) =
 
     const timer = setTimeout(() => {
       startTransition(() => {
-        router.replace(toHref({ accountId, from, to, counterparty: counterparty || undefined }), {
-          scroll: false,
-        });
+        router.replace(
+          filtersHref({
+            accountId,
+            category,
+            from,
+            to,
+            counterparty: counterparty || undefined,
+            page: 1,
+          }),
+          { scroll: false },
+        );
       });
     }, SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [counterparty, applied, accountId, from, to, router]);
+  }, [counterparty, applied, accountId, category, from, to, router]);
 
   const accounts = groups.flatMap((group) =>
     group.accounts.map((account) => ({ ...account, institution: group.institution })),
@@ -83,12 +74,26 @@ export const TransactionFilters = ({ groups, query }: TransactionFiltersProps) =
         aria-label="Account"
         value={accountId ?? ''}
         onChange={(event) => apply({ accountId: event.target.value || undefined })}
-        className="border-hairline bg-surface text-ink hover:border-ink-faint max-w-[15rem] truncate rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+        className={`${field} max-w-[15rem] truncate`}
       >
         <option value="">All accounts</option>
         {accounts.map((account) => (
           <option key={account.id} value={account.id}>
             {account.institution.name ?? 'Linked bank'}: {account.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        aria-label="Category"
+        value={category ?? ''}
+        onChange={(event) => apply({ category: event.target.value || undefined })}
+        className={`${field} max-w-[12rem] truncate`}
+      >
+        <option value="">All categories</option>
+        {categories.map((name) => (
+          <option key={name} value={name}>
+            {name}
           </option>
         ))}
       </select>

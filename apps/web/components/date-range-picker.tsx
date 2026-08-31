@@ -43,6 +43,9 @@ const buildMonth = (year: number, month: number): Cell[] => {
 const shiftMonths = (at: Date, by: number): Date =>
   new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth() + by, 1));
 
+const monthStartIso = (at: Date): string =>
+  new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), 1)).toISOString().slice(0, 10);
+
 const monthTitle = (at: Date): string =>
   new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(at);
 
@@ -52,11 +55,15 @@ const PRESETS = [
   { label: 'Last 12 months', days: 365 },
 ];
 
+const todayIso = (): string => new Date().toISOString().slice(0, 10);
+
 export const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) => {
   const container = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [anchor, setAnchor] = useState(() => new Date());
+  const [anchor, setAnchor] = useState(() => new Date(`${to ?? todayIso()}T00:00:00.000Z`));
   const [pendingStart, setPendingStart] = useState<string | null>(null);
+
+  const latest = todayIso();
 
   useEffect(() => {
     if (!open) {
@@ -87,6 +94,10 @@ export const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) =>
   }, [open]);
 
   const pick = (iso: string) => {
+    if (iso > latest) {
+      return;
+    }
+
     if (pendingStart === null) {
       setPendingStart(iso);
 
@@ -153,8 +164,9 @@ export const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) =>
             <button
               type="button"
               onClick={() => setAnchor(shiftMonths(anchor, 1))}
+              disabled={monthStartIso(shiftMonths(anchor, 1)) > latest}
               aria-label="Next month"
-              className="text-ink-muted hover:text-ink hover:bg-surface-muted h-7 w-7 rounded-md text-sm"
+              className="text-ink-muted hover:text-ink hover:bg-surface-muted h-7 w-7 rounded-md text-sm disabled:pointer-events-none disabled:opacity-30"
             >
               ›
             </button>
@@ -172,7 +184,8 @@ export const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) =>
                 key={cell.iso}
                 type="button"
                 onClick={() => pick(cell.iso)}
-                className={`h-8 rounded-md text-xs tabular-nums transition-colors ${
+                disabled={cell.iso > latest}
+                className={`h-8 rounded-md text-xs tabular-nums transition-colors disabled:pointer-events-none disabled:opacity-25 ${
                   isEdge(cell.iso) ? 'bg-plum font-semibold text-white' : ''
                 } ${inRange(cell.iso) ? 'bg-surface-muted text-ink' : ''} ${
                   isEdge(cell.iso) || inRange(cell.iso) ? '' : 'hover:bg-surface-muted'
@@ -204,7 +217,9 @@ export const DateRangePicker = ({ from, to, onChange }: DateRangePickerProps) =>
           </div>
 
           <p className="text-ink-faint mt-2 text-[0.6875rem]">
-            {pendingStart === null ? 'Pick the first day' : 'Now pick the last day'}
+            {pendingStart === null
+              ? 'Pick the first day. Dates after today are not available.'
+              : 'Now pick the last day'}
           </p>
         </div>
       ) : null}

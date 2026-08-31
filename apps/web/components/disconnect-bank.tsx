@@ -25,7 +25,7 @@ export const DisconnectBank = ({ consentId, institutionName }: DisconnectBankPro
       await revokeConsent(consentId);
       router.refresh();
     } catch {
-      setError('Disconnecting failed. Check the API is running, then try again.');
+      setError('We could not disconnect that bank. Try again in a moment.');
       setBusy(false);
       setConfirming(false);
     }

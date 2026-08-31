@@ -16,6 +16,7 @@ export type Dashboard = {
   consents: ConsentSummary[];
   accounts: AccountsResponse;
   transactions: TransactionsResponse;
+  categories: string[];
   stats: StatsResponse;
   lastSyncedAt: string | null;
   syncError: string | null;
@@ -66,10 +67,7 @@ const mostRecent = (consents: ConsentSummary[]): string | null => {
   return timestamps.sort().reverse()[0] ?? null;
 };
 
-const resolveState = (
-  consents: ConsentSummary[],
-  transactions: TransactionsResponse,
-): DashboardState => {
+export const resolveState = (consents: ConsentSummary[], now: Date): DashboardState => {
   if (consents.length === 0) {
     return 'empty';
   }
@@ -78,7 +76,9 @@ const resolveState = (
     return 'syncing';
   }
 
-  if (transactions.transactions.length === 0) {
+  const lastSyncedAt = mostRecent(consents);
+
+  if (lastSyncedAt === null) {
     return 'syncing';
   }
 
@@ -86,13 +86,7 @@ const resolveState = (
     return 'stale';
   }
 
-  const lastSyncedAt = mostRecent(consents);
-
-  if (lastSyncedAt === null) {
-    return 'syncing';
-  }
-
-  const hoursAgo = (Date.now() - new Date(lastSyncedAt).getTime()) / 3_600_000;
+  const hoursAgo = (now.getTime() - new Date(lastSyncedAt).getTime()) / 3_600_000;
 
   if (hoursAgo > STALE_AFTER_HOURS) {
     return 'stale';
@@ -115,20 +109,22 @@ export const classifyFailure = (error: unknown): Failure => {
 
 export const readDashboard = async (query: TransactionQuery): Promise<Dashboard> => {
   try {
-    const [consents, accounts, transactions, stats] = await Promise.all([
+    const [consents, accounts, transactions, categories, stats] = await Promise.all([
       api.getConsents(),
       api.getAccounts(),
       api.getTransactions(query),
+      api.getTransactionCategories(),
       api.getStats(),
     ]);
 
     const failed = consents.consents.find((consent) => consent.lastSyncStatus === 'failed');
 
     return {
-      state: resolveState(consents.consents, transactions),
+      state: resolveState(consents.consents, new Date()),
       consents: consents.consents,
       accounts,
       transactions,
+      categories: categories.categories,
       stats,
       lastSyncedAt: mostRecent(consents.consents),
       syncError: failed?.lastSyncError ?? null,
@@ -141,7 +137,8 @@ export const readDashboard = async (query: TransactionQuery): Promise<Dashboard>
       state: failure.state,
       consents: [],
       accounts: emptyAccounts,
-      transactions: { transactions: [], nextCursor: null },
+      transactions: { transactions: [], total: 0, offset: 0, limit: query.limit ?? 0 },
+      categories: [],
       stats: emptyStats,
       lastSyncedAt: null,
       syncError: null,

@@ -50,7 +50,7 @@ export const RunwayCard = ({
       {points.length < 2 ? (
         <div className="flex flex-1 flex-col justify-center py-8">
           <p className="text-ink-muted text-sm">
-            The curve appears once a sync has computed a burn rate.
+            Your runway appears once there is a month of spending to measure.
           </p>
         </div>
       ) : (
@@ -58,7 +58,7 @@ export const RunwayCard = ({
           <p className="figure text-plum mt-3 text-3xl font-extrabold">{runwayLabel}</p>
           <p className="text-ink-muted mt-1 text-xs">
             {cashZeroAt === null
-              ? 'Not burning cash over the last three months'
+              ? 'You are not burning cash at the moment'
               : `Cash zero on ${shortDate(cashZeroAt)}`}
           </p>
 

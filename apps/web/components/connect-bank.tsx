@@ -30,7 +30,7 @@ export const ConnectBank = ({ label, variant = 'button' }: ConnectBankProps) => 
         await submitPublicToken(publicToken);
         router.refresh();
       } catch {
-        setError('Linking failed. Check the API is running, then try again.');
+        setError('We could not finish connecting that bank. Try again.');
       } finally {
         setBusy(false);
         setToken(null);
@@ -54,7 +54,7 @@ export const ConnectBank = ({ label, variant = 'button' }: ConnectBankProps) => 
     try {
       setToken(await requestLinkToken());
     } catch {
-      setError('Plaid Link would not start. Check your Plaid keys in .env.');
+      setError('We could not open the bank chooser. Try again in a moment.');
       setBusy(false);
     }
   };
@@ -71,9 +71,7 @@ export const ConnectBank = ({ label, variant = 'button' }: ConnectBankProps) => 
           <PlusIcon className="h-4 w-4" />
           {busy ? 'Working' : label}
         </span>
-        <span className="text-ink-faint text-xs">
-          {error ?? 'Add another bank through Plaid Link'}
-        </span>
+        <span className="text-ink-faint text-xs">{error ?? 'Connect another bank securely'}</span>
       </button>
     );
   }

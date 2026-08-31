@@ -20,14 +20,21 @@ export type TransactionSummary = {
 
 export type TransactionQuery = {
   accountId?: string;
+  category?: string;
   from?: string;
   to?: string;
   counterparty?: string;
-  cursor?: string;
+  offset?: number;
   limit?: number;
 };
 
 export type TransactionsResponse = {
   transactions: TransactionSummary[];
-  nextCursor: string | null;
+  total: number;
+  offset: number;
+  limit: number;
+};
+
+export type TransactionCategoriesResponse = {
+  categories: string[];
 };

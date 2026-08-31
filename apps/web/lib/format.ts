@@ -73,3 +73,19 @@ export const dateRangeLabel = (from: string | undefined, to: string | undefined)
 
   return `${compactDate(from ?? '')} to ${shortDate(to ?? '')}`;
 };
+
+export const dateRangeSentence = (from: string | undefined, to: string | undefined): string => {
+  if (from && to) {
+    return `between ${compactDate(from)} and ${shortDate(to)}`;
+  }
+
+  if (from) {
+    return `on or after ${shortDate(from)}`;
+  }
+
+  if (to) {
+    return `on or before ${shortDate(to)}`;
+  }
+
+  return 'in this period';
+};

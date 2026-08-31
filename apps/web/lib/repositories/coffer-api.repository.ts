@@ -9,6 +9,7 @@ import type {
   CreateLinkTokenResponse,
   RevokeConsentResponse,
   StatsResponse,
+  TransactionCategoriesResponse,
   TransactionQuery,
   TransactionsResponse,
   UserResponse,
@@ -82,6 +83,9 @@ export const getAccounts = (): Promise<AccountsResponse> =>
 
 export const getTransactions = (query: TransactionQuery): Promise<TransactionsResponse> =>
   request(() => client.get<TransactionsResponse>('/transactions', { params: query }));
+
+export const getTransactionCategories = (): Promise<TransactionCategoriesResponse> =>
+  request(() => client.get<TransactionCategoriesResponse>('/transactions/categories'));
 
 export const getStats = (): Promise<StatsResponse> =>
   request(() => client.get<StatsResponse>('/stats'));

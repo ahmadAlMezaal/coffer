@@ -14,7 +14,7 @@ export const SyncNotice = ({ state, lastSyncedAt, syncError, apiError }: SyncNot
   if (state === 'unreachable') {
     return (
       <p className={`${shell} text-outflow border-outflow/20 bg-outflow/5`}>
-        The API is not answering on port 3001. Run <code>make dev</code>.
+        Coffer cannot reach its own API on port 3001. Run <code>make dev</code>.
         {apiError === null ? '' : ` The connection failed with: ${apiError}.`}
       </p>
     );
@@ -23,8 +23,7 @@ export const SyncNotice = ({ state, lastSyncedAt, syncError, apiError }: SyncNot
   if (state === 'rejected') {
     return (
       <p className={`${shell} text-outflow border-outflow/20 bg-outflow/5`}>
-        The API answered but rejected the request: {apiError}. The dashboard stays empty until that
-        clears.
+        The API turned the request down: {apiError}. Nothing loads until that clears.
       </p>
     );
   }
@@ -32,37 +31,28 @@ export const SyncNotice = ({ state, lastSyncedAt, syncError, apiError }: SyncNot
   if (state === 'empty') {
     return (
       <p className={`${shell} border-hairline bg-surface text-ink-muted`}>
-        Nothing is linked yet. Connect a bank, or run <code>make seed</code> for a sandbox business
-        with months of history.
+        No banks connected yet. Connect one to see your balances, spending and runway.
       </p>
     );
   }
 
   if (state === 'syncing') {
-    return (
-      <p className={`${shell} text-caution border-caution/20 bg-caution/5`}>
-        Balances are in. Transactions are still arriving from the bank, which takes seconds to
-        minutes. This page updates on refresh.
-      </p>
-    );
+    return <p className="text-ink-muted text-sm">Bringing your latest position in.</p>;
   }
 
   if (state === 'stale') {
     return (
       <p className={`${shell} text-caution border-caution/20 bg-caution/5`}>
         {syncError === null
-          ? `Showing data from the last successful sync${
-              lastSyncedAt === null ? '' : `, ${relativeTime(lastSyncedAt)}`
-            }.`
-          : `The last sync failed: ${syncError}. Showing the data from the run before it.`}
+          ? `This is your position as of ${lastSyncedAt === null ? 'the last update' : relativeTime(lastSyncedAt)}. We are still trying your bank.`
+          : 'We could not reach your bank on the last try, so this is your last known position. We will keep trying.'}
       </p>
     );
   }
 
   return (
     <p className="text-ink-muted text-sm">
-      Synced {lastSyncedAt === null ? 'just now' : relativeTime(lastSyncedAt)}. The worker polls
-      every four hours.
+      Up to date as of {lastSyncedAt === null ? 'just now' : relativeTime(lastSyncedAt)}.
     </p>
   );
 };

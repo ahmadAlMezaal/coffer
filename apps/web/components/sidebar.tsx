@@ -60,7 +60,9 @@ export const Sidebar = ({ user, initiallyExpanded }: SidebarProps) => {
         expanded ? 'w-[15rem]' : 'w-[4.5rem]'
       }`}
     >
-      <div className="flex h-16 items-center gap-2.5 px-4">
+      <div
+        className={`flex h-16 items-center gap-2.5 px-4 ${expanded ? '' : 'justify-center px-0'}`}
+      >
         <span className="text-plum">
           <CofferMark />
         </span>

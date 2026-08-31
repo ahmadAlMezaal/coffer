@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { SEEDED_USER_ID } from '../config/app';
 
+import { describeRangeProblem } from './date-range';
 import { TransactionsRepository } from './transactions.repository';
-import type { TransactionSummary, TransactionsResponse } from '@coffer/contracts';
+import type {
+  TransactionCategoriesResponse,
+  TransactionSummary,
+  TransactionsResponse,
+} from '@coffer/contracts';
 import type { TransactionQueryDto } from './transaction-query.dto';
 import type { TransactionRecord } from './transactions.repository';
 
@@ -44,24 +49,35 @@ export class TransactionsService {
   constructor(private readonly transactions: TransactionsRepository) {}
 
   async list(query: TransactionQueryDto): Promise<TransactionsResponse> {
-    const limit = Math.min(query.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
+    const problem = describeRangeProblem({ from: query.from, to: query.to }, new Date());
 
-    const rows = await this.transactions.list({
+    if (problem !== null) {
+      throw new BadRequestException(problem);
+    }
+
+    const limit = Math.min(query.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
+    const offset = query.offset ?? 0;
+
+    const page = await this.transactions.list({
       userId: SEEDED_USER_ID,
       accountId: query.accountId,
+      category: query.category,
       from: toDate(query.from),
       to: toDate(query.to),
       counterparty: query.counterparty,
-      cursor: query.cursor,
-      take: limit + 1,
+      skip: offset,
+      take: limit,
     });
 
-    const page = rows.slice(0, limit);
-    const last = page[page.length - 1];
-
     return {
-      transactions: page.map(toSummary),
-      nextCursor: rows.length > limit && last ? last.id : null,
+      transactions: page.rows.map(toSummary),
+      total: page.total,
+      offset,
+      limit,
     };
+  }
+
+  async listCategories(): Promise<TransactionCategoriesResponse> {
+    return { categories: await this.transactions.listCategories(SEEDED_USER_ID) };
   }
 }

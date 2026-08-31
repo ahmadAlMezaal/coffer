@@ -26,7 +26,7 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
 
   if (loading && accounts.length === 0) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Skeleton />
         <Skeleton />
         <Skeleton />
@@ -36,7 +36,7 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <section className="bg-plum flex flex-col rounded-[0.875rem] p-5 text-white">
         <p className="text-[0.6875rem] font-semibold tracking-[0.08em] text-white/60 uppercase">
           Total balance
@@ -71,8 +71,8 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
           <p className="text-ink-faint mt-auto flex items-center gap-1.5 pt-3 text-xs">
             <RefreshIcon className="h-3.5 w-3.5" />
             {account.lastSyncedAt === null
-              ? 'Not synced yet'
-              : `Synced ${relativeTime(account.lastSyncedAt)}`}
+              ? 'Waiting for the first update'
+              : `Updated ${relativeTime(account.lastSyncedAt)}`}
           </p>
         </section>
       ))}

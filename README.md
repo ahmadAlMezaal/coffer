@@ -147,14 +147,24 @@ POST   /consents               exchange public_token, store, start workflow, 200
 GET    /consents               connection list with status, expiry and lastSyncedAt
 DELETE /consents/:id           remove the Plaid item, stop the workflow, revoke
 GET    /accounts               accounts with balances, grouped by consent
-GET    /transactions           ?accountId&from&to&counterparty&cursor&limit
+GET    /transactions           ?accountId&category&from&to&counterparty&offset&limit
+GET    /transactions/categories the categories the owner actually has, for the filter
 GET    /stats                  balances, monthly in and out, runway, cash zero, deltas
 GET    /me                     the signed in owner, for the profile card
 ```
 
 Transactions is one filtered endpoint rather than nested under an account,
-because the table has Date, Account and To/From filters above a single combined
-list. Reads filter `removedAt: null`. No authentication, per the brief.
+because the table has account, category, date and counterparty filters above a
+single combined list. Reads filter `removedAt: null`. No authentication, per the
+brief.
+
+Paging is offset and total rather than a cursor, because the table shows
+"Showing 26 to 50 of 96" and a Previous link, and a cursor cannot answer either.
+The count runs in the same transaction as the page, so the two cannot disagree.
+
+A range that reaches past today, or runs backwards, is a 400 rather than an
+empty table. The picker will not offer those dates in the first place, so this
+is the guard for a hand written address.
 
 `GET /stats` is a read of `stats_snapshots`, never a computation. The workflow
 computes and writes them. The six month series behind the spend and income
@@ -200,10 +210,11 @@ the server renders the right width and nothing jumps on load.
 
 **Home** opens on a card per account, each carrying the bank's own logo pulled
 from Plaid, then three charts: projected balance falling to cash zero, and six
-months of spend and income as bars against the month just gone. Under them sits
-the transaction table, filtered by account, by a single date range and by
-counterparty. Choosing an account or a range applies straight away, there is no
-Filter button to press.
+months of spend and income as bars against the month just gone. Every bar is a
+link, so clicking one filters the table to that month and marks the bar as
+chosen. Under them sits the paged transaction table, filtered by account, by
+category, by a single date range and by counterparty. Every filter applies on
+change, there is no Filter button to press.
 
 **Accounts** is where a connection is managed rather than read: what each bank
 holds, when the consent was given, when its access expires, and the control to
@@ -211,17 +222,26 @@ disconnect it.
 
 ## Three dashboard states
 
-Driven off consent `status` and `lastSyncedAt`.
+Driven off consent `status` and `lastSyncedAt`, and nothing else. In particular
+not off how many transactions came back, because a filter that matches nothing
+is not a bank that has not answered, and reading it as one put skeleton rows
+under a date range that simply had no spending in it.
 
-**Syncing.** Balance cards populated, skeleton rows in the table, a line saying
-transactions are still being fetched. This is the state right after linking, and
-it is the async architecture made visible. Accounts and balances arrive almost
-instantly because banks expose those on demand. Transactions do not, because
-Plaid has to pull history from the institution, which takes seconds to minutes.
+**Connecting.** A banner naming the bank, balance cards populated, skeleton rows
+in the table. The page polls itself every four seconds while this lasts, so
+nobody has to guess whether to refresh. This is the state right after linking,
+and it is the async architecture made visible. Accounts and balances arrive
+almost instantly because banks expose those on demand. Transactions do not,
+because Plaid has to pull history from the institution, which takes seconds to
+minutes.
 
 **Ready.** Everything rendered.
 
 **Stale.** Last run failed or is more than eight hours old.
+
+An empty table is its own thing rather than a fourth state. It says whether the
+filters found nothing or the account has nothing yet, and names the date range
+it looked in.
 
 ## Layout
 
