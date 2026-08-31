@@ -1,7 +1,6 @@
 # Assumptions
 
-Every shortcut taken, written down. The brief caps this at roughly four hours
-and asks which shortcuts got taken, so this file is a deliverable rather than an
+Every shortcut taken, written down. The brief asks which shortcuts got taken, so this file is a deliverable rather than an
 apology.
 
 ## Scope
@@ -119,7 +118,7 @@ shows no transactions for four hours and looks broken.
 of PII. At any real volume the table needs monthly partitioning and a retention
 window.
 
-## Scope
+##  What was cut, and what was not
 
 The cut order in the plan was `sync_runs` writes, then `stats_snapshots`, then
 internal transfer detection, then the runway curve, then the stale indicator.
