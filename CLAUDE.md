@@ -79,8 +79,9 @@ build ordering to maintain.
 generates TypeScript rather than compiled JavaScript, and `apps/api` runs on
 swc, which compiles only its own sources, so neither package would ever be
 compiled for it. Both therefore compile themselves to CommonJS `dist`,
-`make db-build` runs ahead of typecheck, build and dev, and `postinstall` runs
-it so a fresh clone works.
+`make dev` and `pnpm run build` run `db-build` ahead of themselves, `make
+migrate` runs it afterwards, and `postinstall` runs it so a fresh clone works.
+`pnpm run typecheck` does not, so it reads whatever `dist` is already there.
 
 `apps/api` imports `@coffer/provider` for the two link-time Plaid calls, which
 is why the provider needed a `dist` as well.
@@ -92,11 +93,11 @@ make up            postgres and the temporal dev server
 make down          stop both
 make install       pnpm install
 make db-build      prisma generate and compile the built packages
-make migrate       author and apply a migration
+make migrate       author and apply a migration, then rebuild the packages
 make deploy        apply pending migrations without authoring one
 make seed          seed the user and a business shaped sandbox consent
 make seed-dynamic  seed from the dynamic sandbox user, so sync-new can inject
-make dev           postgres, temporal, then web, api and worker
+make dev           postgres, temporal, db-build, then web, api and worker
 make worker        infrastructure, then the worker only
 make api           infrastructure, then the api only
 make web           the dashboard only
@@ -106,10 +107,11 @@ make check         lint, typecheck and test
 make replay        rebuild normalised tables from raw
 ```
 
-`make migrate` authors a migration from a schema change and applies it.
-`make deploy` applies migrations that already exist and authors nothing, which
-is what a checkout that has fallen behind wants. After any schema change,
-`make db-build` is what makes the new model visible to the API and the worker.
+`make migrate` authors a migration from a schema change, applies it, and then
+runs `db-build`, because that is what makes the new model visible to the API and
+the worker. `make deploy` applies migrations that already exist and authors
+nothing, which is what a checkout that has fallen behind wants. It stops at the
+database, so follow it with `make db-build`.
 
 ## Skills
 

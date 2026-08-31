@@ -66,23 +66,31 @@ to the authenticated user who requested the link token.
 
 ## Denial of service
 
-**`GET /transactions` is cheap to abuse and does bounded work only because it
-was written that way.** `limit` is capped at 200 and validated as an integer,
-and paging is keyset rather than offset, so a deep page does not get slower. Had
-either been missing, `?limit=1000000` or `?offset=5000000` would be a one-line
-denial of service against a table that grows without bound.
+**`GET /transactions` pages by offset, and deep offsets get slower.** `limit` is
+capped at 200 and validated as an integer, so `?limit=1000000` does nothing.
+`offset` is not bounded the same way, and Prisma's `skip` compiles to a SQL
+`OFFSET`, which makes the database walk and discard every preceding row before
+returning a page. On a transactions table that grows without bound,
+`?offset=5000000` is a slow query an attacker can issue cheaply and repeatedly,
+and the `COUNT` that runs alongside it scans as well.
 
-The `counterparty` filter compiles to two `ILIKE '%term%'` predicates, which
-cannot use an index. On a large transactions table that is a full scan per
-request, and it is the one endpoint an attacker would aim at. Production wants a
-trigram index or a real search index.
+Offset paging was chosen deliberately rather than by omission. The table shows
+"Showing 26 to 50 of 96" and offers a Previous link, and a cursor can answer
+neither. The production version keeps the visible total as a separate cached or
+estimated query and pages the rows by keyset, so the cost of a page stops
+depending on how far into the table it sits.
 
-**The workflow retries a failing bank forever.** A sync run that fails is caught,
-recorded and retried on the next tick rather than killing the workflow. That is
-the right behaviour for a poller, but it means a permanently broken consent
-generates provider calls indefinitely. Production needs a circuit breaker that
-moves the consent to `reauth_required` after N consecutive failures and stops
-calling.
+**The `counterparty` filter compiles to two `ILIKE '%term%'` predicates**, which
+cannot use a btree index. On a large transactions table that is a full scan per
+request, and it is the endpoint an attacker would aim at first. Production wants
+a trigram index or a real search index.
+
+**The workflow retries a failing bank forever.** A sync run that fails is
+caught, recorded and retried on the next tick rather than killing the workflow.
+That is the right behaviour for a poller, but it means a permanently broken
+consent generates provider calls indefinitely. Production needs a circuit
+breaker that moves the consent to `reauth_required` after N consecutive failures
+and stops calling.
 
 ## Integrity of the numbers
 

@@ -32,8 +32,9 @@ install: ## Install every workspace dependency
 db-build: ## Generate the prisma client and compile the built packages
 	pnpm run packages:build
 
-migrate: ## Author a migration from the schema and apply it
+migrate: ## Author a migration from the schema, apply it, then rebuild the packages
 	pnpm --filter @coffer/database exec prisma migrate dev
+	$(MAKE) db-build
 
 deploy: ## Apply migrations that already exist, authoring none
 	pnpm --filter @coffer/database exec prisma migrate deploy
@@ -44,7 +45,7 @@ seed: ## Seed the user and a sandbox business with three months of history
 seed-dynamic: ## Seed from the dynamic sandbox user, so sync-new can inject transactions
 	COFFER_SANDBOX_USER=dynamic pnpm --filter @coffer/worker run seed
 
-dev: up ## Run web, api and worker together
+dev: up db-build ## Run web, api and worker together
 	pnpm run dev
 
 worker: up ## Run the worker on its own
