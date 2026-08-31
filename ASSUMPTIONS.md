@@ -24,6 +24,12 @@ the sandbox accounts rather than converting. There is no FX and no
 multi-currency total. A real deployment needs a base currency, a rate source
 and a rate valid at the transaction date, not today's.
 
+**Disconnecting a bank has not been exercised against Plaid.** The path
+terminates the sync workflow, calls `/item/remove` and revokes the consent, and
+it typechecks and is wired through the UI, but running it would have unlinked
+the seeded sandbox data the demo depends on. It is the one code path here that
+ships untested.
+
 **No joint accounts and no credit cards.** Every account is treated as a
 depository balance the user owns outright.
 
@@ -113,8 +119,21 @@ shows no transactions for four hours and looks broken.
 of PII. At any real volume the table needs monthly partitioning and a retention
 window.
 
-## Nothing was cut
+## Scope
 
 The cut order in the plan was `sync_runs` writes, then `stats_snapshots`, then
 internal transfer detection, then the runway curve, then the stale indicator.
 None of it was needed. All five are in.
+
+Several things also went beyond what the brief asked for, deliberately rather
+than by drift. A collapsing drawer and a separate Accounts page, because
+managing a connection and reading its data are different jobs and the mockup
+only covers the second. Six months of spend and income as clickable bars,
+because a single monthly total invites the question of whether it is typical.
+Bank logos and category chips, because a table of twelve identical grey rows is
+harder to read than the mockup suggests. Pagination and a category filter,
+because the seeded ledger was long enough to need both. Disconnect, because a
+consent that can be granted and never revoked is not a consent.
+
+None of it is load bearing for the features the brief lists, and all of it came
+after those were working.

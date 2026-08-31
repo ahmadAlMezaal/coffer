@@ -51,8 +51,9 @@ make deploy     apply migrations that already exist, authoring none
 `make migrate` is for a schema you have just changed. `make deploy` is for a
 checkout that has fallen behind, and it never writes a new migration.
 
-Both are separate from `make db-build`. A migration changes the database. A
-build changes the types. You will usually want both, in that order.
+A migration changes the database. A build changes the types. You want both, in
+that order, so `make migrate` runs `make db-build` for you once the migration
+has applied. `make deploy` does not, so run `make db-build` after it yourself.
 
 ## Where things live
 

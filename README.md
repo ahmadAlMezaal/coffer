@@ -13,7 +13,7 @@ make up          postgres on 5432, temporal dev server on 7233 with a UI on 8233
 make deploy      apply the migrations
 make db-build    generate the prisma client and compile the built packages
 make seed        create the user and a sandbox business with three months of history
-make dev         brings up `make up`, then web on 3000, api on 3001, worker on the queue
+make dev         `make up` and `make db-build`, then web on 3000, api on 3001, worker on the queue
 ```
 
 `.env` needs `PLAID_CLIENT_ID` and `PLAID_SECRET` from
@@ -262,4 +262,5 @@ packages/provider   Plaid client and normalisation, the only place fetch is allo
 | [THREATS.md](THREATS.md)                         | What can go wrong and how this could be exploited    |
 | [docs/BUILD-IT-RIGHT.md](docs/BUILD-IT-RIGHT.md) | What production would need that this does not have   |
 | [SCHEMA.md](SCHEMA.md)                           | The data model and why it is shaped that way         |
+| [docs/ai/](docs/ai/)                             | Every prompt and session behind this build           |
 | [CLAUDE.md](CLAUDE.md)                           | Conventions, layering and the lint rules behind them |
