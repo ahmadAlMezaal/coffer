@@ -49,22 +49,24 @@ seeded user or the migrations.
 
 Read path and write path are separate processes.
 
-```
-                 ┌─────────────┐
-  browser ──────▶│  apps/web   │  server components, one client component for Link
-                 └──────┬──────┘
-                        │ http
-                 ┌──────▼──────┐
-                 │  apps/api   │  reads postgres, plus two link-time Plaid calls
-                 └──────┬──────┘
-                        │ starts sync-{consentId}
-                 ┌──────▼──────────┐         ┌──────────────────┐
-                 │ temporal server │────────▶│   apps/worker    │──▶ Plaid
-                 └─────────────────┘         └────────┬─────────┘
-                                                      │
-                        ┌─────────────────────────────▼───────────────┐
-                        │ raw_provider_payloads → normalised → stats  │
-                        └─────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  browser["Browser"]
+  web["apps/web<br/>server components, one client component for Link"]
+  api["apps/api<br/>NestJS"]
+  temporal["Temporal server<br/>task queue coffer-sync"]
+  worker["apps/worker<br/>workflow and activities"]
+  db[("Postgres<br/>raw, then normalised, then aggregated")]
+  plaid["Plaid"]
+
+  browser --> web
+  web -->|http| api
+  api -->|reads| db
+  api -->|"link token and token exchange, at link time only"| plaid
+  api -->|"starts and terminates sync-{consentId}"| temporal
+  temporal <-->|"polls the task queue"| worker
+  worker -->|"transactions sync, balances"| plaid
+  worker -->|"every response written raw, then normalised"| db
 ```
 
 The API reads Postgres and nothing else. The worker is the only process that
@@ -77,29 +79,73 @@ One honest exception. Plaid Link is interactive, so `/link/token/create` and
 `/item/public_token/exchange` are synchronous calls made by the API. Two calls,
 at link time only, never on a read.
 
+## Linking a bank, end to end
+
+The one flow that crosses every process, from the button to a table with rows in
+it.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Owner
+  participant Web as apps/web
+  participant API as apps/api
+  participant Plaid
+  participant Temporal
+  participant Worker as apps/worker
+  participant DB as Postgres
+
+  Owner->>Web: Connect a bank
+  Web->>API: POST /link-tokens
+  API->>Plaid: create a link token
+  Plaid-->>Owner: Link opens, the bank authenticates them
+  Owner->>Web: public token
+  Web->>API: POST /consents
+  API->>Plaid: exchange it for an access token
+  API->>DB: store the consent, status processing
+  API->>Temporal: start sync-{consentId}
+  API-->>Web: 200, before a single transaction exists
+  Temporal->>Worker: syncConsentWorkflow, on coffer-sync
+  Worker->>Plaid: transactions sync, page by page
+  Worker->>DB: raw payload, then accounts, transactions and stats
+  loop every four seconds while the banner says Connecting
+    Web->>API: consents, accounts, transactions, stats
+  end
+```
+
+Step ten is the whole architecture in one line. The link call returns as soon as
+the consent is stored and the workflow is started, so nothing in the request
+path waits on a bank. Everything after it arrives because the page asks again,
+which is why the connecting banner exists rather than a spinner that blocks.
+
+Disconnecting runs the same path backwards. The API terminates the workflow,
+tells Plaid to remove the item, then marks the consent revoked, in that order.
+
 ## The workflow
 
 One workflow per consent, id `sync-{consentId}`, so a duplicate start is a no-op
 rather than a second syncer.
 
-```
-syncConsentWorkflow(consentId)
-  loop:
-    startSyncRun
-    loop until has_more is false:
-      fetchPage                  cursor in, raw payload written, page returned
-      normaliseAndUpsertPage     upsert added, apply modified, soft delete removed
-    persistCursor                only after the full pagination loop completes
-    refreshBalances
-    detectInternalTransfers
-    recomputeStats
-    finishSyncRun
-    wait 4 hours, or 20 seconds while the bank is still backfilling,
-      or until a syncNow signal arrives
-    continueAsNew every 30 iterations
+```mermaid
+flowchart TB
+  start["startSyncRun"] --> fetch["fetchPage<br/>cursor in, raw payload written, page returned"]
+  fetch --> normalise["normaliseAndUpsertPage<br/>upsert added, apply modified, soft delete removed"]
+  normalise --> more{"has_more"}
+  more -- yes --> fetch
+  more -- no --> cursor["persistCursor<br/>the commit at the end of the loop, never mid-pages"]
+  cursor --> balances["refreshBalances"]
+  balances --> transfers["detectInternalTransfers"]
+  transfers --> stats["recomputeStats"]
+  stats --> finish["finishSyncRun"]
+  finish --> wait{"backfill<br/>complete"}
+  wait -- "yes, wait 4 hours or until a syncNow signal" --> iterations{"30 iterations"}
+  wait -- "no, wait 20 seconds" --> iterations
+  iterations -- no --> start
+  iterations -- yes --> fresh["continueAsNew"]
+  fresh --> start
 ```
 
-Two details worth pointing at.
+Three details worth pointing at.
 
 **The cursor is persisted after the whole pagination loop, never mid-pages.** A
 cursor saved after page two of five, followed by a crash, resumes past
@@ -115,13 +161,58 @@ a newly linked account shows an empty table for four hours and looks broken.
 the bytes are safe in `raw_provider_payloads`. A parsing bug then fails a second
 activity that retries on its own and never causes a refetch.
 
-Outbound rate limiting to Plaid is `maxActivitiesPerSecond` on the worker rather
-than a hand written token bucket. Inbound rate limiting is `@nestjs/throttler`,
-tightest on the link route.
-
 Four hourly is six times a day, which roughly matches how often Plaid checks
 most institutions itself. Polling harder gains nothing, and the on-demand path
-is `/transactions/refresh`, a paid add-on.
+is `/transactions/refresh`, a paid add-on. Inbound rate limiting is
+`@nestjs/throttler`, tightest on the link route.
+
+### What Temporal is doing here
+
+The loop above is ordinary code. Temporal is what makes it survivable, and each
+piece it contributes earns its place.
+
+**The workflow id is the lock.** `sync-{consentId}`, so starting it twice raises
+`WorkflowExecutionAlreadyStartedError`, which the API logs and swallows. Linking
+the same bank twice cannot leave two syncers running, and no distributed lock
+had to be invented to say so.
+
+**The task queue is the boundary.** The API is only a client of `coffer-sync`,
+and the worker is the only process that polls it. That is the mechanism behind
+the claim above that access tokens never live in a process serving public
+traffic.
+
+**Activities are the only side effects.** All eight boxes in the diagram are
+activities, because the workflow function is replayed from its own event history
+whenever a worker picks it up, and anything that differs between the run and the
+replay corrupts it. So the workflow decides what happens and in what order,
+while Plaid, Postgres and the clock are only ever touched by an activity. They
+retry five times, five seconds then doubling, two minutes start to close, which
+is why each one is written to be safe to run twice.
+
+**Signals are how a sync happens now.** The wait is
+`workflow.condition(() => syncRequested, interval)` rather than a sleep, so a
+`syncNow` signal cuts it short. `make sync` sends that signal, and a Plaid
+webhook would send the same one.
+
+**`continueAsNew` keeps the history bounded.** Every thirty iterations the
+workflow starts itself again with a fresh history. A loop that polls for months
+without it eventually hits the history limit, having passed every test on the
+way there.
+
+**Termination is part of revoking.** `DELETE /consents/:id` terminates the
+workflow before it calls Plaid, so a run in flight cannot write against an item
+that is about to disappear.
+
+**The rate limit is the queue's job.** `maxActivitiesPerSecond: 5` on the
+worker, rather than a hand written token bucket that only holds inside one
+process.
+
+Failure has the same shape as success. An activity that exhausts its retries
+falls to the catch, `finishSyncRun` records the run as failed with the error,
+and the cursor is left exactly where it was. The next iteration starts a fresh
+run from that same cursor, so a bad sync costs a delay rather than a gap in the
+ledger, and the dashboard reads the failure off the consent and calls itself
+stale.
 
 ## The raw layer
 
