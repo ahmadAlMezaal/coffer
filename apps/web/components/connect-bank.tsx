@@ -39,7 +39,12 @@ export const ConnectBank = ({ label, variant = 'button' }: ConnectBankProps) => 
     [router],
   );
 
-  const { open, ready } = usePlaidLink({ token, onSuccess });
+  const onExit = useCallback(() => {
+    setBusy(false);
+    setToken(null);
+  }, []);
+
+  const { open, ready } = usePlaidLink({ token, onSuccess, onExit });
 
   useEffect(() => {
     if (token && ready) {

@@ -8,6 +8,7 @@
     "seed": "tsx src/scripts/seed.ts",
     "sync": "tsx src/scripts/sync.ts",
     "replay": "tsx src/scripts/replay.ts",
+    "reset": "tsx src/scripts/reset.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

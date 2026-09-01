@@ -68,6 +68,7 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
           amount={dashboard.stats.monthlyOutflow}
           currency={dashboard.stats.currency}
           changePercent={dashboard.stats.outflowChangePercent}
+          monthComplete={dashboard.stats.monthComplete}
           series={dashboard.stats.monthlySeries}
           read={(total) => total.outflow}
           goodWhenRising={false}
@@ -79,6 +80,7 @@ const HomePage = async ({ searchParams }: { searchParams: SearchParams }) => {
           amount={dashboard.stats.monthlyInflow}
           currency={dashboard.stats.currency}
           changePercent={dashboard.stats.inflowChangePercent}
+          monthComplete={dashboard.stats.monthComplete}
           series={dashboard.stats.monthlySeries}
           read={(total) => total.inflow}
           goodWhenRising

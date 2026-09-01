@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normaliseAccount, normaliseTransaction } from './normalise';
+import { isCashAccount, normaliseAccount, normaliseTransaction } from './normalise';
 import type { AccountBase, Transaction } from 'plaid';
 
 const transaction = (overrides: Partial<Transaction>): Transaction =>
@@ -112,5 +112,24 @@ describe('normaliseAccount', () => {
 
     expect(result.currentBalance).toBe('0.00');
     expect(result.availableBalance).toBeNull();
+  });
+});
+
+describe('isCashAccount', () => {
+  it('counts a depository account as cash', () => {
+    expect(isCashAccount('depository')).toBe(true);
+  });
+
+  it('does not count a mortgage or any other loan as cash', () => {
+    expect(isCashAccount('loan')).toBe(false);
+  });
+
+  it('does not count a credit card as cash', () => {
+    expect(isCashAccount('credit')).toBe(false);
+  });
+
+  it('does not count an investment holding as cash', () => {
+    expect(isCashAccount('investment')).toBe(false);
+    expect(isCashAccount('brokerage')).toBe(false);
   });
 });

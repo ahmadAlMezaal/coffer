@@ -27,3 +27,23 @@ export const fillMonths = (until: Date, totals: MonthTotals[]): MonthlyTotal[] =
       outflow: (match?.outflow ?? 0).toFixed(2),
     };
   });
+
+export type ComparisonSpan = {
+  from: Date;
+  to: Date;
+  monthComplete: boolean;
+};
+
+export const comparisonSpan = (now: Date): ComparisonSpan => {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const dayOfMonth = now.getUTCDate();
+  const lastDayOfPreviousMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const lastDayOfThisMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+
+  return {
+    from: new Date(Date.UTC(year, month - 1, 1)),
+    to: new Date(Date.UTC(year, month - 1, Math.min(dayOfMonth, lastDayOfPreviousMonth))),
+    monthComplete: dayOfMonth >= lastDayOfThisMonth,
+  };
+};

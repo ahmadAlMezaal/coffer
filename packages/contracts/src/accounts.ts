@@ -7,6 +7,7 @@ export type AccountSummary = {
   mask: string | null;
   type: string;
   subtype: string | null;
+  isCash: boolean;
   currency: string;
   currentBalance: string;
   availableBalance: string | null;

@@ -24,6 +24,8 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
     })),
   );
 
+  const cashCount = accounts.filter((account) => account.isCash).length;
+
   if (loading && accounts.length === 0) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -45,7 +47,7 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
           {preciseMoney(totalBalance, currency)}
         </p>
         <p className="mt-auto pt-3 text-xs text-white/60">
-          Across {accounts.length} account{accounts.length === 1 ? '' : 's'} at {groups.length} bank
+          Across {cashCount} cash account{cashCount === 1 ? '' : 's'} at {groups.length} bank
           {groups.length === 1 ? '' : 's'}
         </p>
       </section>
@@ -67,6 +69,12 @@ export const BalanceCards = ({ groups, totalBalance, currency, loading }: Balanc
             {account.name}
             {account.mask === null ? '' : ` (••${account.mask})`}
           </p>
+
+          {account.isCash ? null : (
+            <p className="border-hairline text-ink-faint mt-2 self-start rounded-full border px-2 py-0.5 text-[0.6875rem]">
+              Not counted in the total
+            </p>
+          )}
 
           <p className="text-ink-faint mt-auto flex items-center gap-1.5 pt-3 text-xs">
             <RefreshIcon className="h-3.5 w-3.5" />

@@ -6,7 +6,7 @@ TEMPORAL_PID := .temporal/temporal.pid
 TEMPORAL_LOG := .temporal/temporal.log
 TEMPORAL_DB := .temporal/coffer.db
 
-.PHONY: help up down install db-build migrate deploy seed seed-dynamic dev worker api web sync sync-new check replay
+.PHONY: help up down install db-build migrate deploy reset reseed seed seed-dynamic dev worker api web sync sync-new check replay
 
 help:
 	@grep -hE '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -38,6 +38,11 @@ migrate: ## Author a migration from the schema, apply it, then rebuild the packa
 
 deploy: ## Apply migrations that already exist, authoring none
 	pnpm --filter @coffer/database exec prisma migrate deploy
+
+reset: ## Terminate the sync workflows and clear every consent, account and transaction
+	pnpm --filter @coffer/worker run reset
+
+reseed: reset seed ## Clear everything, then seed one clean sandbox business
 
 seed: ## Seed the user and a sandbox business with three months of history
 	pnpm --filter @coffer/worker run seed
