@@ -18,99 +18,99 @@ erDiagram
     USERS {
         uuid id PK
         text email
-        timestamptz created_at
+        timestamp createdAt
     }
 
     ACCESS_CONSENTS {
         uuid id PK
-        uuid user_id FK
+        uuid userId FK
         text provider
-        text provider_item_id UK
-        text access_token
-        text institution_id
-        text institution_name
-        text institution_logo
-        text institution_colour
-        timestamptz institution_refreshed_at
+        text providerItemId UK
+        text accessToken
+        text institutionId
+        text institutionName
+        text institutionLogo
+        text institutionColour
+        timestamp institutionRefreshedAt
         text status
-        text sync_cursor
-        timestamptz consented_at
-        timestamptz expires_at
-        timestamptz last_synced_at
-        timestamptz created_at
+        text syncCursor
+        timestamp consentedAt
+        timestamp expiresAt
+        timestamp lastSyncedAt
+        timestamp createdAt
     }
 
     ACCOUNTS {
         uuid id PK
-        uuid access_consent_id FK
-        text provider_account_id UK
+        uuid accessConsentId FK
+        text providerAccountId UK
         text name
         text mask
         text type
         text subtype
         text currency
-        numeric current_balance
-        numeric available_balance
-        timestamptz balance_as_of
-        timestamptz created_at
+        numeric currentBalance
+        numeric availableBalance
+        timestamp balanceAsOf
+        timestamp createdAt
     }
 
     TRANSACTIONS {
         uuid id PK
-        uuid account_id FK
-        text provider_transaction_id UK
+        uuid accountId FK
+        text providerTransactionId UK
         numeric amount
         text direction
         text currency
-        date booked_at
+        date bookedAt
         text description
-        text merchant_name
+        text merchantName
         text category
-        text payment_method
-        boolean is_internal_transfer
-        uuid internal_transfer_pair_id FK
-        timestamptz removed_at
-        timestamptz created_at
+        text paymentMethod
+        boolean isInternalTransfer
+        uuid internalTransferPairId FK
+        timestamp removedAt
+        timestamp createdAt
     }
 
     STATS_SNAPSHOTS {
         uuid id PK
-        uuid user_id FK
-        date period_start
-        date period_end
-        numeric total_balance
-        numeric monthly_inflow
-        numeric monthly_outflow
-        numeric net_burn
-        integer runway_days
-        date cash_zero_at
-        timestamptz computed_at
+        uuid userId FK
+        date periodStart
+        date periodEnd
+        numeric totalBalance
+        numeric monthlyInflow
+        numeric monthlyOutflow
+        numeric netBurn
+        integer runwayDays
+        date cashZeroAt
+        timestamp computedAt
     }
 
     RAW_PROVIDER_PAYLOADS {
         uuid id PK
-        uuid access_consent_id FK
-        uuid sync_run_id FK
+        uuid accessConsentId FK
+        uuid syncRunId FK
         text provider
         text endpoint
-        text request_cursor
-        jsonb response_body
-        text response_hash
-        integer http_status
-        timestamptz received_at
+        text requestCursor
+        jsonb responseBody
+        text responseHash
+        integer httpStatus
+        timestamp receivedAt
     }
 
     SYNC_RUNS {
         uuid id PK
-        uuid access_consent_id FK
-        text workflow_id
+        uuid accessConsentId FK
+        text workflowId
         text status
-        integer transactions_added
-        integer transactions_modified
-        integer transactions_removed
+        integer transactionsAdded
+        integer transactionsModified
+        integer transactionsRemoved
         text error
-        timestamptz started_at
-        timestamptz finished_at
+        timestamp startedAt
+        timestamp finishedAt
     }
 ```
 
@@ -130,13 +130,18 @@ natural to live, and a cursor stored per account would be wrong, because
 
 User to account is still reachable, one join further out through the consent.
 
+Table names are snake_case through `@@map`. Column names are not: Prisma maps
+tables and leaves fields alone, so the columns are camelCase in Postgres too.
+The diagram above matches `\d accounts` rather than the convention the table
+names suggest.
+
 ## Field notes
 
-**`access_consents.provider_item_id`** is Plaid's Item id. The table is named
+**`access_consents.providerItemId`** is Plaid's Item id. The table is named
 after the Open Banking concept rather than the vendor one, which is what keeps
 the door open for Yapily or TrueLayer without a migration.
 
-**`access_consents.sync_cursor`** is the `next_cursor` from
+**`access_consents.syncCursor`** is the `next_cursor` from
 `/transactions/sync`. It is written only after a full pagination loop completes,
 never between pages. A cursor saved after page two of five, followed by a crash,
 resumes past transactions that were never stored, and nothing errors or retries.
@@ -148,10 +153,10 @@ connecting state from it. Disconnecting a bank calls Plaid's `/item/remove`,
 terminates the sync workflow and sets `revoked`. Every read filters revoked
 consents out rather than deleting rows, so the raw payloads stay auditable.
 
-**`access_consents.institution_logo`** and `institution_colour` hold the
+**`access_consents.institutionLogo`** and `institutionColour` hold the
 optional branding Plaid returns from `/institutions/get_by_id`, cached so the
 dashboard never reaches a provider to draw a row.
-`institution_refreshed_at` records that the lookup happened, including when it
+`institutionRefreshedAt` records that the lookup happened, including when it
 came back empty, which is what stops a bank without a logo being fetched on
 every page load.
 
@@ -160,16 +165,16 @@ unsigned. Plaid returns positive amounts for money leaving the account, the
 opposite of what most people assume. Normalising once at the persistence
 boundary means no code above it can get the sign wrong.
 
-**`transactions.provider_transaction_id`** is unique and the write path upserts
+**`transactions.providerTransactionId`** is unique and the write path upserts
 on it. Sync returns added, modified and removed, so a write is an upsert plus a
 soft delete rather than an insert.
 
-**`transactions.removed_at`** rather than a hard delete. Removed transactions
+**`transactions.removedAt`** rather than a hard delete. Removed transactions
 still have to leave the stats, and a soft delete is what makes the sync
 idempotent.
 
-**`transactions.is_internal_transfer`** and the self-referencing
-`internal_transfer_pair_id`. Detection is a heuristic: same absolute amount,
+**`transactions.isInternalTransfer`** and the self-referencing
+`internalTransferPairId`. Detection is a heuristic: same absolute amount,
 opposite direction, within three days, across two accounts under one user. Both
 rows are flagged and paired. They stay visible in the transactions table and are
 excluded from inflow, outflow, net burn and runway. False positives on
@@ -230,13 +235,13 @@ sits tightest on the link route.
 ## Indexes
 
 ```
-transactions (account_id, booked_at desc)      the transaction table read
-transactions (provider_transaction_id) unique  dedupe on upsert
-transactions (account_id, amount, booked_at)   internal transfer matching
-accounts (access_consent_id)
-access_consents (user_id)
-raw_provider_payloads (access_consent_id, received_at desc)
-raw_provider_payloads (response_hash)          skip identical repeat payloads
+transactions (accountId, bookedAt desc)       the transaction table read
+transactions (providerTransactionId) unique   dedupe on upsert
+transactions (accountId, amount, bookedAt)    internal transfer matching
+accounts (accessConsentId)
+access_consents (userId)
+raw_provider_payloads (accessConsentId, receivedAt desc)
+raw_provider_payloads (responseHash)          skip identical repeat payloads
 ```
 
 ## What is deliberately not here

@@ -44,6 +44,7 @@ const emptyStats: StatsResponse = {
   monthlyOutflow: '0.00',
   inflowChangePercent: null,
   outflowChangePercent: null,
+  monthComplete: false,
   netBurn: '0.00',
   runwayDays: null,
   runwayLabel: '—',

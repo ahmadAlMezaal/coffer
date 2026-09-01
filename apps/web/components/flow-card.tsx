@@ -10,22 +10,40 @@ type FlowCardProps = {
   amount: string;
   currency: string;
   changePercent: number | null;
+  monthComplete: boolean;
   series: MonthlyTotal[];
   read: (total: MonthlyTotal) => string;
   goodWhenRising: boolean;
   filters: TransactionFilters;
 };
 
-const Delta = ({ change, good }: { change: number | null; good: boolean }) => {
-  const label = signedPercentage(change);
+const deltaTone = (change: number, goodWhenRising: boolean): string => {
+  if (change === 0) {
+    return 'text-ink-faint';
+  }
 
-  if (label === null) {
-    return <p className="text-ink-faint mt-1 text-xs">Nothing to compare with last month</p>;
+  return goodWhenRising === change > 0 ? 'text-inflow' : 'text-outflow';
+};
+
+const Delta = ({
+  change,
+  goodWhenRising,
+  monthComplete,
+}: {
+  change: number | null;
+  goodWhenRising: boolean;
+  monthComplete: boolean;
+}) => {
+  const label = signedPercentage(change);
+  const against = monthComplete ? 'last month' : 'the same days last month';
+
+  if (label === null || change === null) {
+    return <p className="text-ink-faint mt-1 text-xs">Nothing in {against} to compare with</p>;
   }
 
   return (
-    <p className={`mt-1 text-xs font-medium ${good ? 'text-inflow' : 'text-outflow'}`}>
-      {label} on last month
+    <p className={`mt-1 text-xs font-medium ${deltaTone(change, goodWhenRising)}`}>
+      {label} on {against}
     </p>
   );
 };
@@ -35,6 +53,7 @@ export const FlowCard = ({
   amount,
   currency,
   changePercent,
+  monthComplete,
   series,
   read,
   goodWhenRising,
@@ -42,7 +61,6 @@ export const FlowCard = ({
 }: FlowCardProps) => {
   const values = series.map((total) => Number(read(total)));
   const highest = Math.max(...values, 1);
-  const good = changePercent === null ? true : goodWhenRising === changePercent >= 0;
 
   return (
     <section className="card flex flex-col p-5">
@@ -50,7 +68,7 @@ export const FlowCard = ({
       <p className="figure text-ink mt-3 text-3xl font-extrabold">
         {preciseMoney(amount, currency)}
       </p>
-      <Delta change={changePercent} good={good} />
+      <Delta change={changePercent} goodWhenRising={goodWhenRising} monthComplete={monthComplete} />
 
       <div className="mt-4 flex h-28 items-end gap-2">
         {series.map((total, index) => {

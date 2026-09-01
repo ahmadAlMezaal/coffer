@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { SEEDED_USER_ID } from '../config/app';
 
-import { MONTHS_CHARTED, fillMonths } from './monthly-series';
+import { MONTHS_CHARTED, comparisonSpan, fillMonths } from './monthly-series';
 import { percentageChange, projectBalance, runwayLabel } from './runway';
 import { StatsRepository } from './stats.repository';
-import type { MonthlyTotal, StatsResponse } from '@coffer/contracts';
+import type { StatsResponse } from '@coffer/contracts';
 
 const DEFAULT_CURRENCY = 'GBP';
 
@@ -18,20 +18,6 @@ const endOfMonth = (at: Date): Date =>
 const chartStart = (at: Date): Date =>
   new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth() - (MONTHS_CHARTED - 1), 1));
 
-const monthOnMonth = (
-  series: MonthlyTotal[],
-  read: (total: MonthlyTotal) => string,
-): number | null => {
-  const current = series[series.length - 1];
-  const previous = series[series.length - 2];
-
-  if (current === undefined || previous === undefined) {
-    return null;
-  }
-
-  return percentageChange(Number(read(current)), Number(read(previous)));
-};
-
 @Injectable()
 export class StatsService {
   constructor(private readonly stats: StatsRepository) {}
@@ -39,7 +25,11 @@ export class StatsService {
   async read(): Promise<StatsResponse> {
     const snapshot = await this.stats.latest(SEEDED_USER_ID);
     const now = new Date();
-    const rows = await this.stats.monthlyTotals(SEEDED_USER_ID, chartStart(now));
+    const span = comparisonSpan(now);
+    const [rows, previous] = await Promise.all([
+      this.stats.monthlyTotals(SEEDED_USER_ID, chartStart(now)),
+      this.stats.spanTotals(SEEDED_USER_ID, span.from, span.to),
+    ]);
 
     const monthlySeries = fillMonths(
       now,
@@ -50,17 +40,15 @@ export class StatsService {
       })),
     );
 
-    const inflowChangePercent = monthOnMonth(monthlySeries, (total) => total.inflow);
-    const outflowChangePercent = monthOnMonth(monthlySeries, (total) => total.outflow);
-
     if (snapshot === null) {
       return {
         currency: DEFAULT_CURRENCY,
         totalBalance: '0.00',
         monthlyInflow: '0.00',
         monthlyOutflow: '0.00',
-        inflowChangePercent,
-        outflowChangePercent,
+        inflowChangePercent: null,
+        outflowChangePercent: null,
+        monthComplete: span.monthComplete,
         netBurn: '0.00',
         runwayDays: null,
         runwayLabel: '—',
@@ -81,8 +69,15 @@ export class StatsService {
       totalBalance: snapshot.totalBalance.toFixed(2),
       monthlyInflow: snapshot.monthlyInflow.toFixed(2),
       monthlyOutflow: snapshot.monthlyOutflow.toFixed(2),
-      inflowChangePercent,
-      outflowChangePercent,
+      inflowChangePercent: percentageChange(
+        Number(snapshot.monthlyInflow),
+        Number(previous.inflow),
+      ),
+      outflowChangePercent: percentageChange(
+        Number(snapshot.monthlyOutflow),
+        Number(previous.outflow),
+      ),
+      monthComplete: span.monthComplete,
       netBurn: snapshot.netBurn.toFixed(2),
       runwayDays: snapshot.runwayDays,
       runwayLabel: runwayLabel(snapshot.runwayDays),

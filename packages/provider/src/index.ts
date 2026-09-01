@@ -2,7 +2,12 @@ export { DEFAULT_CURRENCY, PROVIDER_NAME, readProviderConfig } from './config';
 export { capture, hashPayload } from './capture';
 export { fetchAccounts, parseAccounts } from './accounts';
 export { createLinkToken, exchangePublicToken, fetchInstitution, removeItem } from './link';
-export { normaliseAccount, normaliseTransaction } from './normalise';
+export {
+  CASH_ACCOUNT_TYPES,
+  isCashAccount,
+  normaliseAccount,
+  normaliseTransaction,
+} from './normalise';
 export {
   SANDBOX_INSTITUTION_ID,
   createDynamicSandboxPublicToken,

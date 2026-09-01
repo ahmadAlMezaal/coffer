@@ -16,6 +16,7 @@ export type StatsResponse = {
   monthlyOutflow: string;
   inflowChangePercent: number | null;
   outflowChangePercent: number | null;
+  monthComplete: boolean;
   netBurn: string;
   runwayDays: number | null;
   runwayLabel: string;

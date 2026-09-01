@@ -11,6 +11,11 @@ export type MonthRow = {
   outflow: Prisma.Decimal;
 };
 
+export type SpanRow = {
+  inflow: Prisma.Decimal;
+  outflow: Prisma.Decimal;
+};
+
 @Injectable()
 export class StatsRepository {
   constructor(private readonly database: DatabaseService) {}
@@ -20,6 +25,24 @@ export class StatsRepository {
       where: { userId },
       orderBy: [{ periodStart: 'desc' }, { computedAt: 'desc' }],
     });
+  }
+
+  async spanTotals(userId: string, from: Date, to: Date): Promise<SpanRow> {
+    const rows = await this.database.client.$queryRaw<SpanRow[]>`
+      SELECT COALESCE(SUM(t.amount) FILTER (WHERE t.direction = 'in'), 0) AS inflow,
+             COALESCE(SUM(t.amount) FILTER (WHERE t.direction = 'out'), 0) AS outflow
+      FROM transactions t
+      JOIN accounts a ON a.id = t."accountId"
+      JOIN access_consents c ON c.id = a."accessConsentId"
+      WHERE t."removedAt" IS NULL
+        AND t."isInternalTransfer" = FALSE
+        AND t."bookedAt" >= ${from}
+        AND t."bookedAt" <= ${to}
+        AND c."userId" = ${userId}::uuid
+        AND c.status <> 'revoked'
+    `;
+
+    return rows[0] ?? { inflow: new Prisma.Decimal(0), outflow: new Prisma.Decimal(0) };
   }
 
   monthlyTotals(userId: string, since: Date): Promise<MonthRow[]> {

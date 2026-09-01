@@ -1,4 +1,5 @@
 import { prisma } from '@coffer/database';
+import { CASH_ACCOUNT_TYPES } from '@coffer/provider';
 import type { NormalisedAccount } from '@coffer/provider';
 
 export const upsertMany = async (
@@ -50,7 +51,10 @@ export const idsByProviderAccountId = async (
 
 export const totalBalanceForUser = async (userId: string): Promise<number> => {
   const totals = await prisma.account.aggregate({
-    where: { accessConsent: { userId, status: { not: 'revoked' } } },
+    where: {
+      accessConsent: { userId, status: { not: 'revoked' } },
+      type: { in: CASH_ACCOUNT_TYPES },
+    },
     _sum: { currentBalance: true },
   });
 

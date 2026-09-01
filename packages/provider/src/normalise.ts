@@ -55,3 +55,7 @@ export const normaliseTransaction = (transaction: Transaction): NormalisedTransa
   paymentMethod: transaction.payment_channel === null ? null : String(transaction.payment_channel),
   pending: transaction.pending,
 });
+
+export const CASH_ACCOUNT_TYPES = ['depository'];
+
+export const isCashAccount = (type: string): boolean => CASH_ACCOUNT_TYPES.includes(type);

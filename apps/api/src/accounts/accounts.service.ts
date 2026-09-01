@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { isCashAccount } from '@coffer/provider';
+
 import { SEEDED_USER_ID } from '../config/app';
 import { ConsentsRepository } from '../consents/consents.repository';
 
@@ -16,6 +18,7 @@ const toSummary = (account: Account): AccountSummary => ({
   mask: account.mask,
   type: account.type,
   subtype: account.subtype,
+  isCash: isCashAccount(account.type),
   currency: account.currency,
   currentBalance: account.currentBalance.toFixed(2),
   availableBalance: account.availableBalance === null ? null : account.availableBalance.toFixed(2),
@@ -49,7 +52,9 @@ export class AccountsService {
       accounts: accounts.filter((account) => account.accessConsentId === consent.id).map(toSummary),
     }));
 
-    const totalBalance = accounts.reduce(
+    const cash = accounts.filter((account) => isCashAccount(account.type));
+
+    const totalBalance = cash.reduce(
       (running, account) => running + Number(account.currentBalance),
       0,
     );
@@ -57,7 +62,7 @@ export class AccountsService {
     return {
       groups,
       totalBalance: totalBalance.toFixed(2),
-      currency: accounts[0]?.currency ?? DEFAULT_CURRENCY,
+      currency: cash[0]?.currency ?? accounts[0]?.currency ?? DEFAULT_CURRENCY,
     };
   }
 }

@@ -39,6 +39,12 @@ make sync-new      inject a transaction, then sync, only lands on a dynamic item
 `make seed` is the default because the default sandbox spending is US retail and
 a burn rate computed from it comes out coffee-shop sized.
 
+Seeding twice links a second Plaid item rather than replacing the first, so the
+same ledger arrives twice and every transaction appears in the table twice.
+`make reseed` clears the consents, terminates their sync workflows and seeds one
+clean bank. `make reset` is the clearing half on its own. Neither touches the
+seeded user or the migrations.
+
 ## The shape of it
 
 Read path and write path are separate processes.
@@ -179,9 +185,13 @@ is revoked anyway.
 
 ## Stats
 
-**Total balance** sums `currentBalance` across every account under an active
+**Total balance** sums `currentBalance` across the cash accounts under an active
 consent. Current, not available, to stay on the same accounting basis as a
-booked-only ledger.
+booked-only ledger. Cash means a `depository` account. A mortgage, a loan or a
+credit card carries a positive `current` balance that is money owed rather than
+money held, so counting it would inflate the balance and, through it, the
+runway. Those accounts still get a card of their own, marked as outside the
+total.
 
 **Monthly inflow and outflow** are calendar month, Europe/London, with internal
 transfers excluded from both, so the "from last month" comparison has a previous

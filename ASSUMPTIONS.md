@@ -29,8 +29,22 @@ it typechecks and is wired through the UI, but running it would have unlinked
 the seeded sandbox data the demo depends on. It is the one code path here that
 ships untested.
 
-**No joint accounts and no credit cards.** Every account is treated as a
-depository balance the user owns outright.
+**No joint accounts.** Every depository balance is treated as money the user
+owns outright.
+
+**Only cash counts towards the balance and the runway.** A `depository` account
+is cash. A loan, a mortgage or a credit card reports a positive `current`
+balance that is money owed, so it is excluded from the total and from every
+figure derived from it. The account still gets a card, marked as outside the
+total, because the brief asks to show account balances and hiding one is worse
+than explaining it. What is missing is the other half: a real product nets
+liabilities off somewhere and says so, rather than leaving them off to one side.
+
+**The mockup's Payment Method column shows the category instead.**
+`paymentMethod` is stored and populated, Plaid's `payment_channel`, so the
+column is a one-line change. Category earns the space more: `in store` against
+`online` says less about a business ledger than `Payroll` against `Rent and
+utilities` does.
 
 **Institution agnostic.** Whatever the provider returns is stored generically,
 with no per-bank logic. In production, field coverage varies by bank, merchant
@@ -38,9 +52,10 @@ names and category quality especially, and real systems need per-institution
 capability handling.
 
 **Consent expiry and reauthorisation not implemented.** UK AIS consent needs
-reconfirming roughly every 90 days. The `status` column and its
-`reauth_required` value exist for it, and `expiresAt` is on the table, but
-nothing writes them. The production path is an `ITEM_LOGIN_REQUIRED` error state
+reconfirming roughly every 90 days. `expiresAt` is written at link time and the
+Accounts page prints it, but nothing acts on it: the date passes and the consent
+stays `active`. The `status` column carries a `reauth_required` value that
+nothing ever sets. The production path is an `ITEM_LOGIN_REQUIRED` error state
 plus an update-mode relink.
 
 **Webhooks not implemented.** `SYNC_UPDATES_AVAILABLE` is a doorbell carrying no
