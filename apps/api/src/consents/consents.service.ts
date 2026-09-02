@@ -111,6 +111,12 @@ export class ConsentsService {
 
     await this.consents.revoke(consent.id);
 
+    try {
+      await this.temporal.recomputeStats(consent.id);
+    } catch {
+      this.logger.warn(`Stats could not be recomputed after revoking ${consent.id}`);
+    }
+
     return { consentId: consent.id, status: 'revoked' };
   }
 

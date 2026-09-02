@@ -1,14 +1,19 @@
 import type { RunwayPoint } from '@coffer/contracts';
 
 const MONTHS_PROJECTED = 60;
+const DAYS_IN_MONTH = 30;
 
 export const runwayLabel = (runwayDays: number | null): string => {
   if (runwayDays === null || runwayDays <= 0) {
     return '—';
   }
 
+  if (runwayDays < DAYS_IN_MONTH) {
+    return `${runwayDays} day${runwayDays === 1 ? '' : 's'}`;
+  }
+
   const years = Math.floor(runwayDays / 365);
-  const months = Math.floor((runwayDays % 365) / 30);
+  const months = Math.floor((runwayDays % 365) / DAYS_IN_MONTH);
 
   if (years === 0) {
     return `${months} month${months === 1 ? '' : 's'}`;

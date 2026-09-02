@@ -1,3 +1,8 @@
+'use client';
+
+import { useEffect } from 'react';
+
+import { useConnecting } from '@/components/connecting-context';
 import type { ConsentSummary } from '@coffer/contracts';
 
 type ConnectingBannerProps = {
@@ -15,9 +20,15 @@ const names = (consents: ConsentSummary[]): string => {
 };
 
 export const ConnectingBanner = ({ consents }: ConnectingBannerProps) => {
-  const connecting = consents.filter((consent) => consent.status === 'processing');
+  const { connecting, setConnecting } = useConnecting();
+  const processing = consents.filter((consent) => consent.status === 'processing');
+  const signature = consents.map((consent) => `${consent.id}:${consent.status}`).join(',');
 
-  if (connecting.length === 0) {
+  useEffect(() => {
+    setConnecting(false);
+  }, [signature, setConnecting]);
+
+  if (processing.length === 0 && !connecting) {
     return null;
   }
 
@@ -33,7 +44,7 @@ export const ConnectingBanner = ({ consents }: ConnectingBannerProps) => {
           className="h-8 w-8 shrink-0 animate-spin rounded-full border-2 border-white/25 border-t-white"
         />
         <div className="min-w-0">
-          <p className="font-display text-base font-bold">Connecting {names(connecting)}</p>
+          <p className="font-display text-base font-bold">Connecting {names(processing)}</p>
           <p className="mt-0.5 text-sm text-white/70">
             Your balances arrive first, then your transactions. This usually takes under a minute
             and the page updates on its own, so there is no need to refresh.

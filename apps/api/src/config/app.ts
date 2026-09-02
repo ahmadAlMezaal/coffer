@@ -8,4 +8,6 @@ export const TEMPORAL_TASK_QUEUE = 'coffer-sync';
 
 export const SYNC_WORKFLOW_TYPE = 'syncConsentWorkflow';
 
+export const RECOMPUTE_STATS_WORKFLOW_TYPE = 'recomputeStatsWorkflow';
+
 export const API_PORT = Number(process.env.API_PORT ?? 3001);

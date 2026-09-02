@@ -8,7 +8,14 @@ describe('runwayLabel', () => {
     expect(runwayLabel(0)).toBe('—');
   });
 
+  it('renders days rather than a rounded down zero under a month', () => {
+    expect(runwayLabel(1)).toBe('1 day');
+    expect(runwayLabel(6)).toBe('6 days');
+    expect(runwayLabel(29)).toBe('29 days');
+  });
+
   it('renders months alone under a year', () => {
+    expect(runwayLabel(30)).toBe('1 month');
     expect(runwayLabel(90)).toBe('3 months');
   });
 

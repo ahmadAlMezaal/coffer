@@ -1,6 +1,7 @@
 import { Inter, Manrope } from 'next/font/google';
 import { cookies } from 'next/headers';
 
+import { ConnectingProvider } from '@/components/connecting-context';
 import { Sidebar } from '@/components/sidebar';
 import { DRAWER_COOKIE, isDrawerExpanded } from '@/lib/drawer';
 import { readUser } from '@/lib/services/dashboard.service';
@@ -33,10 +34,12 @@ const RootLayout = async ({ children }: { children: ReactNode }) => {
         suppressHydrationWarning
         className="bg-ground text-ink min-h-screen font-sans antialiased"
       >
-        <div className="flex min-h-screen">
-          <Sidebar user={user} initiallyExpanded={expanded} />
-          <div className="min-w-0 flex-1">{children}</div>
-        </div>
+        <ConnectingProvider>
+          <div className="flex min-h-screen">
+            <Sidebar user={user} initiallyExpanded={expanded} />
+            <div className="min-w-0 flex-1">{children}</div>
+          </div>
+        </ConnectingProvider>
       </body>
     </html>
   );

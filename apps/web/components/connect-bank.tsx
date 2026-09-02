@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 
 import { requestLinkToken, submitPublicToken } from '@/app/actions';
+import { useConnecting } from '@/components/connecting-context';
 import { PlusIcon } from '@/components/icons';
 
 type ConnectBankProps = {
@@ -14,6 +15,7 @@ type ConnectBankProps = {
 
 export const ConnectBank = ({ label, variant = 'button' }: ConnectBankProps) => {
   const router = useRouter();
+  const { setConnecting } = useConnecting();
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,18 +27,20 @@ export const ConnectBank = ({ label, variant = 'button' }: ConnectBankProps) => 
       }
 
       setBusy(true);
+      setConnecting(true);
 
       try {
         await submitPublicToken(publicToken);
         router.refresh();
       } catch {
+        setConnecting(false);
         setError('We could not finish connecting that bank. Try again.');
       } finally {
         setBusy(false);
         setToken(null);
       }
     },
-    [router],
+    [router, setConnecting],
   );
 
   const onExit = useCallback(() => {

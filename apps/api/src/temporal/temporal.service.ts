@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Client, Connection, WorkflowExecutionAlreadyStartedError } from '@temporalio/client';
 
-import { SYNC_WORKFLOW_TYPE, TEMPORAL_ADDRESS, TEMPORAL_TASK_QUEUE } from '../config/app';
+import {
+  RECOMPUTE_STATS_WORKFLOW_TYPE,
+  SYNC_WORKFLOW_TYPE,
+  TEMPORAL_ADDRESS,
+  TEMPORAL_TASK_QUEUE,
+} from '../config/app';
 import type { OnModuleDestroy } from '@nestjs/common';
 
 @Injectable()
@@ -39,6 +44,16 @@ export class TemporalService implements OnModuleDestroy {
 
       throw error;
     }
+  }
+
+  async recomputeStats(consentId: string): Promise<void> {
+    const client = await this.connect();
+
+    await client.workflow.start(RECOMPUTE_STATS_WORKFLOW_TYPE, {
+      taskQueue: TEMPORAL_TASK_QUEUE,
+      workflowId: `stats-${consentId}-${Date.now()}`,
+      args: [{ consentId }],
+    });
   }
 
   async stopSync(consentId: string): Promise<void> {

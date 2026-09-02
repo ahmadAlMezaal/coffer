@@ -113,3 +113,11 @@ export const syncConsentWorkflow = async (input: SyncConsentInput): Promise<void
     iteration: 0,
   });
 };
+
+export type RecomputeStatsInput = {
+  consentId: string;
+};
+
+export const recomputeStatsWorkflow = async (input: RecomputeStatsInput): Promise<void> => {
+  await recomputeStats({ consentId: input.consentId });
+};
