@@ -35,6 +35,14 @@ export const relativeTime = (iso: string): string => {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 };
 
+export const percentageChange = (current: number, previous: number): number | null => {
+  if (previous === 0) {
+    return null;
+  }
+
+  return ((current - previous) / previous) * 100;
+};
+
 export const signedPercentage = (value: number | null): string | null => {
   if (value === null) {
     return null;
@@ -47,6 +55,9 @@ export const signedPercentage = (value: number | null): string | null => {
 
 export const monthLabel = (iso: string): string =>
   new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'UTC' }).format(new Date(iso));
+
+export const monthName = (iso: string): string =>
+  new Intl.DateTimeFormat('en-GB', { month: 'long', timeZone: 'UTC' }).format(new Date(iso));
 
 export const monthYearLabel = (iso: string): string =>
   new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
