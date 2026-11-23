@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24 <25",
+    "node": ">=26 <27",
     "pnpm": ">=11"
   },
   "scripts": {
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
-    "@types/node": "24.10.4",
+    "@types/node": "26.6.6",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-node": "0.3.9",
